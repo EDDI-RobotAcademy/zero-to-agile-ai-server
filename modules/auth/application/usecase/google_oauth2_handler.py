@@ -26,26 +26,32 @@ class GoogleOAuth2Handler:
         email = profile.get("email")
         nickname = profile.get("nickname") or profile.get("name") or email.split("@")[0]
 
-        # 3) DB에서 user 조회 / 없으면 생성 (abang_user 스키마 반영)
+        # user_type 매핑: tenant → FINDER, landlord → OWNER :: 프론트엔드 변경 전 - 향후 프론트엔드 코드 수정 시 변경 및 삭제 가능
+        db_user_type = "FINDER"  # 기본값
+        if user_type == "landlord":
+            db_user_type = "OWNER"
+        elif user_type == "tenant":
+            db_user_type = "FINDER"
+
+        # 3) DB에서 user 조회 / 없으면 생성
         user = self.user_repository.find_by_email(email)
         if user is None:
-            # ✅ 간소화된 파라미터로 호출
             user = self.user_repository.create_user(
                 nickname=nickname,
                 email=email,
-                user_type=user_type or "tenant"  # 기본값 tenant
+                user_type=db_user_type
             )
         else:
             # 같은 이메일인데 user_type 다르면 정책에 따라 차단
-            if user.get("user_type") != (user_type or user.get("user_type")):
+            if user.get("user_type") != db_user_type:
                 raise ValueError("다른 유형의 계정으로 로그인 할 수 없습니다.")
 
         # 4) 서비스 토큰 발급 (access + refresh)
-        access, refresh = self.token_service.create_tokens(user["user_id"])
+        access, refresh = self.token_service.create_tokens(user["abang_user_id"])
 
         # 5) UserInfo DTO 구성
         user_info = UserInfo(
-            id=user["user_id"],
+            id=user["abang_user_id"],
             email=user["email"],
             nickname=user["nickname"],
             user_type=user["user_type"]
