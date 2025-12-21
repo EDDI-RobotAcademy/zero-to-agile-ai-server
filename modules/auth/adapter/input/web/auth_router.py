@@ -5,7 +5,7 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from modules.auth.adapter.input.web.dependencies import get_google_usecase, get_token_service
 from modules.auth.application.dto.auth_dto import TokenRefreshRequest, TokenRefreshResponse
 
-router = APIRouter(prefix="/authentication", tags=["Auth"])
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
 @router.get("/google")
 def redirect_to_google(user_type: str = Query(...), google_usecase = Depends(get_google_usecase)):
@@ -43,7 +43,7 @@ def google_login(code: str, state: str | None = None, google_usecase = Depends(g
         secure=secure_flag,
         samesite="lax",
         max_age=60 * 60 * 24 * 30,
-        path="/authentication"  # refresh endpoint 범위
+        path="/api/auth"  # refresh endpoint 범위
     )
 
     return response
@@ -75,7 +75,7 @@ def token_refresh(request: Request, token_service = Depends(get_token_service)):
         secure=secure_flag,
         samesite="lax",
         max_age=60 * 60 * 24 * 30,
-        path="/authentication"
+        path="/api/auth"
     )
     return response
 
@@ -97,7 +97,7 @@ def logout(request: Request, token_service = Depends(get_token_service)):
 
     # refresh 기반 로그아웃
     if cookie_refresh:
-        user_id = token_service.get_user_id_from_refresh(cookie_refresh)
+        user_id = token_service.get_abang_user_id_from_refresh(cookie_refresh)
         if user_id:
             token_service.logout(user_id) # refreshToken 삭제
 
@@ -105,7 +105,7 @@ def logout(request: Request, token_service = Depends(get_token_service)):
     response = RedirectResponse(frontend_url, status_code=303)
     response.delete_cookie(
         "refresh_token",
-        path="/",  # refresh 경로 포함 전체 제거
+        path="/api/auth",  # 쿠키 설정 path와 동일하게
         httponly=True,
         secure=secure_flag,
         samesite="lax",
