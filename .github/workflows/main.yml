@@ -33,7 +33,7 @@ jobs:
           file: Dockerfile
           push: true
           tags: ghcr.io/${{ secrets.REPO_USER }}/agilebang-server:latest
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
 
   deploy:
     needs: build-and-push
@@ -75,8 +75,8 @@ jobs:
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.REPO_USER }}" --password-stdin
 
             # compose 실행 (환경에 따라 docker compose 또는 docker-compose)
-            docker compose -f docker-compose.yml pull || docker-compose -f docker-compose.yml pull
-            docker compose -f docker-compose.yml up -d || docker-compose -f docker-compose.yml up -d
+            docker-compose -f docker-compose.yml pull
+            docker-compose -f docker-compose.yml up -d
 
             docker ps
             docker image prune -f
