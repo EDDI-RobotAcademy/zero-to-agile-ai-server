@@ -37,7 +37,7 @@ jobs:
 
   deploy:
     needs: build-and-push
-    runs-on: self-hosted
+    runs-on: [ self-hosted, agilebang-server ]
 
     steps:
       - name: Checkout repository
@@ -54,6 +54,6 @@ jobs:
 
       - name: Deploy with docker compose
         run: |
-          docker compose -f docker-compose.yml pull
-          docker compose -f docker-compose.yml up -d
+          docker-compose -f docker-compose.yml pull
+          docker-compose -f docker-compose.yml up -d
           docker image prune -f
