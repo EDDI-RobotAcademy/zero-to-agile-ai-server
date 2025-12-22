@@ -1,5 +1,5 @@
 # Dockerfile.server
-# server.zip(=zero-to-agile-ai-server.zip) 기반으로 FastAPI 서버 이미지 생성
+# server(=zero-to-agile-ai-server) 기반으로 FastAPI 서버 이미지 생성
 
 FROM python:3.12-slim
 
@@ -9,12 +9,12 @@ WORKDIR /srv
 RUN apt-get update && apt-get install -y --no-install-recommends unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# 1) server.zip 복사
-COPY zero-to-agile-ai-server.zip /srv/zero-to-agile-ai-server.zip
+# 1) server 복사
+COPY zero-to-agile-ai-server ./zero-to-agile-ai-server
 
 # 2) 압축 해제
-RUN unzip /srv/zero-to-agile-ai-server.zip -d /srv \
-    && rm /srv/zero-to-agile-ai-server.zip
+RUN unzip /srv/zero-to-agile-ai-server -d /srv \
+    && rm /srv/zero-to-agile-ai-server
 
 # zip 안쪽 폴더로 이동
 WORKDIR /srv/zero-to-agile-ai-server
