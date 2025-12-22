@@ -37,7 +37,7 @@ jobs:
 
   deploy:
     needs: build-and-push
-    runs-on: self-hosted
+    runs-on: [ self-hosted, agilebang-server ]
 
     steps:
       - name: Checkout repository
