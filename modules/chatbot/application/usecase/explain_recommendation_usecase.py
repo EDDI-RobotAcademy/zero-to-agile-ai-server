@@ -7,7 +7,7 @@ from modules.chatbot.adapter.input.web.response.recommendation_chatbot import (
 from modules.chatbot.domain.tone import ChatTone
 
 
-class ExplainRecommendationUseCase:
+class ExplainHouseRecommendationUseCase:
     def execute(
         self,
         request: RecommendationChatbotRequest,
