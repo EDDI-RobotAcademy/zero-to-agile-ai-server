@@ -246,7 +246,7 @@ def edit_finder_request(
 )
 def delete_finder_request(
     finder_request_id: int = Query(..., description="삭제할 요구서 ID", gt=0),
-    abang_user_id: int = Query(..., description="임차인 사용자 ID", gt=0),
+    abang_user_id: int = Depends(auth_required),
     usecase: DeleteFinderRequestUseCase = Depends(get_delete_finder_request_usecase)
 ):
     """
