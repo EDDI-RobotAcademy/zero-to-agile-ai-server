@@ -12,7 +12,7 @@ services:
     depends_on:
       - redis
     networks:
-      - agilebang-net
+      - agile-net
 
   redis:
     image: redis:7-alpine
@@ -22,8 +22,8 @@ services:
       - .env
     command: ["sh", "-lc", "redis-server --requirepass \"$REDIS_PASSWORD\""]
     networks:
-      - agilebang-net
+      - agile-net
 
 networks:
-  agilebang-net:
-    driver: bridge
+  agile-net:
+    external: true

@@ -34,7 +34,19 @@ def google_login(code: str, state: str | None = None, google_usecase = Depends(g
 
     # 프론트엔드 URL 환경 변수화
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
-    response = RedirectResponse(frontend_url)
+
+    # [ADD] user_type에 따라 최종 이동 경로 결정
+    # (주의) user_type 값이 실제로 "finder"/"owner"가 아니라 "tenant"/"landlord" 같은 값이면
+    #        아래 분기만 그 값에 맞게 바꾸면 됩니다.
+    redirect_path = "/auth/role-select"
+    if user_type == "finder":
+        redirect_path = "/finder"
+    elif user_type == "owner":
+        redirect_path = "/owner"
+
+    # [CHANGE] 최종 리다이렉트 위치(Location) 변경
+    response = RedirectResponse(f"{frontend_url}{redirect_path}")
+
     # HttpOnly refresh token cookie (Rotate 정책에 따라 서버가 새 refresh를 발급/갱신함)
     response.set_cookie(
         key="refresh_token",
@@ -47,6 +59,7 @@ def google_login(code: str, state: str | None = None, google_usecase = Depends(g
     )
 
     return response
+
 
 
 @router.post("/token/refresh", response_model=TokenRefreshResponse)
