@@ -3,6 +3,7 @@ from typing import List
 from modules.finder_request.adapter.input.web.request.create_finder_request_request import CreateFinderRequestRequest
 from modules.finder_request.adapter.input.web.request.edit_finder_request_request import EditFinderRequestRequest
 from modules.finder_request.adapter.input.web.response.finder_request_response import FinderRequestResponse
+from modules.auth.adapter.input.auth_middleware import auth_required
 from modules.finder_request.adapter.input.web.dependencies import (
     get_create_finder_request_usecase,
     get_view_finder_requests_usecase,
@@ -87,7 +88,7 @@ def create_finder_request(
     description="특정 임차인의 요구서 목록을 조회합니다."
 )
 def view_finder_requests(
-    abang_user_id: int = Query(..., description="임차인 사용자 ID", gt=0),
+    abang_user_id: int = Depends(auth_required),
     usecase: ViewFinderRequestsUseCase = Depends(get_view_finder_requests_usecase)
 ):
     """
@@ -245,7 +246,7 @@ def edit_finder_request(
 )
 def delete_finder_request(
     finder_request_id: int = Query(..., description="삭제할 요구서 ID", gt=0),
-    abang_user_id: int = Query(..., description="임차인 사용자 ID", gt=0),
+    abang_user_id: int = Depends(auth_required),
     usecase: DeleteFinderRequestUseCase = Depends(get_delete_finder_request_usecase)
 ):
     """
