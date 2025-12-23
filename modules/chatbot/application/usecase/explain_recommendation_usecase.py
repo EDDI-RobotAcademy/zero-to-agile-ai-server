@@ -4,10 +4,15 @@ from modules.chatbot.adapter.input.web.request.recommendation_chatbot import (
 from modules.chatbot.adapter.input.web.response.recommendation_chatbot import (
     RecommendationChatbotResponse,
 )
+from modules.chatbot.adapter.output.llm_adapter import LLMAdapter
+from modules.chatbot.application.port.llm_port import LLMPort
 from modules.chatbot.domain.tone import ChatTone
 
 
-class ExplainHouseRecommendationUseCase:
+class ExplainRecommendationUseCase:
+    def __init__(self, llm_port: LLMPort | None = None) -> None:
+        self._llm_port = llm_port or LLMAdapter()
+
     def execute(
         self,
         request: RecommendationChatbotRequest,
@@ -24,6 +29,9 @@ class ExplainHouseRecommendationUseCase:
     def _format_recommendations(self, request: RecommendationChatbotRequest) -> str:
         if not request.recommendations:
             return f"요청 메시지를 확인했습니다: {request.message}"
+
+        for item in request.recommendations:
+            item.reasons = self._llm_port.generate_reasons(item, request.message)
 
         formatted_items = []
         for item in request.recommendations:
