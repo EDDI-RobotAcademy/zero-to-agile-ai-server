@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime
 from typing import Any, Iterable, Mapping, Sequence, Tuple
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from modules.house_platform.application.dto.fetch_and_store_dto import (
     HousePlatformUpsertBundle,
@@ -123,7 +125,8 @@ class ZigbangAdapter:
             pnu_cd=self._parse_pnu_cd(item.get("pnu")),
             sales_type=item.get("salesType"),
             monthly_rent=self._to_int(price.get("rent")),
-            room_type=item.get("roomType"),
+            room_type=item.get("roomType") or item.get("serviceType"),
+            residence_type=item.get("residenceType"),
             contract_area=self._to_float(area.get("계약면적M2")),
             exclusive_area=self._to_float(area.get("전용면적M2")),
             floor_no=self._to_int(floor_info.get("floor")),
@@ -135,6 +138,8 @@ class ZigbangAdapter:
             can_park=self._parse_parking(item),
             has_elevator=item.get("elevator"),
             image_urls=self._normalize_images(item.get("images")),
+            created_at=self._parse_datetime(item.get("approveDate")),
+            updated_at=self._parse_datetime(item.get("updatedAt")),
         )
 
         included = self._extract_manage_list(manage_cost, "includes", "include")
@@ -149,11 +154,24 @@ class ZigbangAdapter:
         options_raw = item.get("options")
         options = None
         if isinstance(options_raw, list):
-            options = [
-                HousePlatformOptionUpsertModel(option=str(opt))
-                for opt in options_raw
-                if opt
-            ]
+            built_in = self._extract_built_in(options_raw)
+            near_flags = self._extract_near_flags(item)
+            if built_in or any(near_flags.values()):
+                options = HousePlatformOptionUpsertModel(
+                    built_in=built_in or None,
+                    near_univ=near_flags.get("near_univ"),
+                    near_transport=near_flags.get("near_transport"),
+                    near_mart=near_flags.get("near_mart"),
+                )
+        else:
+            near_flags = self._extract_near_flags(item)
+            if any(near_flags.values()):
+                options = HousePlatformOptionUpsertModel(
+                    built_in=None,
+                    near_univ=near_flags.get("near_univ"),
+                    near_transport=near_flags.get("near_transport"),
+                    near_mart=near_flags.get("near_mart"),
+                )
 
         return HousePlatformUpsertBundle(
             house_platform=house_platform,
@@ -180,7 +198,7 @@ class ZigbangAdapter:
         if value is None:
             return None
         if isinstance(value, list):
-            return [str(v) for v in value if v]
+            return [ZigbangAdapter._apply_image_params(str(v)) for v in value if v]
         return None
 
     @staticmethod
@@ -220,7 +238,7 @@ class ZigbangAdapter:
             return None
         if num == 0:
             return 0
-        return num * 10000 if num < 1000 else num
+        return num // 10000 if num >= 1000 else num
 
     @staticmethod
     def _parse_parking(item: Mapping[str, Any]) -> bool | None:
@@ -263,19 +281,138 @@ class ZigbangAdapter:
         return json.dumps(values, ensure_ascii=False)
 
     @staticmethod
-    def _parse_pnu_cd(value: Any) -> int | None:
-        """PNU 문자열을 int8 범위의 정수로 변환한다."""
+    def _normalize_options(values: list[Any]) -> list[str]:
+        """옵션 목록을 정제하고 중복을 제거한다."""
+        seen = set()
+        result: list[str] = []
+        for raw in values:
+            if raw is None:
+                continue
+            text = str(raw).strip()
+            if not text or text in seen:
+                continue
+            seen.add(text)
+            result.append(text)
+        return result
+
+    @staticmethod
+    def _extract_built_in(values: list[Any]) -> list[str]:
+        """옵션에서 빌트인 항목만 추출한다."""
+        normalized = ZigbangAdapter._normalize_options(values)
+        targets = ["에어컨", "냉장고", "세탁기"]
+        built_in: list[str] = []
+        for item in normalized:
+            for target in targets:
+                if target in item and target not in built_in:
+                    built_in.append(target)
+        return built_in
+
+    @staticmethod
+    def _extract_near_flags(item: Mapping[str, Any]) -> dict[str, bool]:
+        """주변 인프라 정보를 rule base로 판별한다."""
+        neighborhoods = item.get("neighborhoods", {}) or {}
+        amenities = [
+            amenity.get("title")
+            for amenity in neighborhoods.get("amenities", [])
+            if isinstance(amenity, Mapping)
+        ]
+        nearby_pois = neighborhoods.get("nearbyPois", []) or []
+
+        def has_amenity(keyword: str) -> bool:
+            for title in amenities:
+                if not title:
+                    continue
+                if keyword in str(title):
+                    return True
+            return False
+
+        def within_10min(poi: Mapping[str, Any]) -> bool:
+            distance = poi.get("distance")
+            time_taken = poi.get("timeTaken")
+            if distance is not None:
+                try:
+                    if float(distance) <= 660:
+                        return True
+                except (TypeError, ValueError):
+                    pass
+            if time_taken is not None:
+                try:
+                    if float(time_taken) <= 600:
+                        return True
+                except (TypeError, ValueError):
+                    pass
+            return False
+
+        def near_poi(poi_types: set[str]) -> bool:
+            for poi in nearby_pois:
+                if not isinstance(poi, Mapping):
+                    continue
+                if not poi.get("exists"):
+                    continue
+                if poi.get("poiType") not in poi_types:
+                    continue
+                if within_10min(poi):
+                    return True
+            return False
+
+        near_univ = near_poi({"대학교", "대학"}) or has_amenity("대학")
+        near_transport = near_poi({"지하철역", "버스정류장"}) or has_amenity("역세권")
+        near_mart = near_poi({"편의점", "대형마트"})
+
+        return {
+            "near_univ": near_univ,
+            "near_transport": near_transport,
+            "near_mart": near_mart,
+        }
+
+    @staticmethod
+    def _apply_image_params(url: str) -> str:
+        """이미지 URL에 접근 가능한 파라미터를 부여한다."""
+        parts = urlsplit(url)
+        query = dict(parse_qsl(parts.query, keep_blank_values=True))
+        query.update({"w": "0", "h": "640", "a": "1"})
+        return urlunsplit(
+            (parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment)
+        )
+
+    @staticmethod
+    def _parse_datetime(value: Any) -> datetime | None:
+        """도메인 날짜 문자열을 datetime으로 변환한다."""
+        if not value:
+            return None
+        if isinstance(value, datetime):
+            return value
+        raw = str(value)
+        formats = [
+            "%Y-%m-%d %H:%M:%S",
+            "%Y.%m.%d %H:%M:%S",
+            "%Y.%m.%d",
+            "%Y-%m-%d",
+            "%Y%m%d",
+            "%Y년 %m월 %d일",
+            "%Y년%m월%d일",
+            "%Y년 %m월 %d일 %H:%M",
+        ]
+        for fmt in formats:
+            try:
+                return datetime.strptime(raw, fmt)
+            except ValueError:
+                continue
+        try:
+            return datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    @staticmethod
+    def _parse_pnu_cd(value: Any) -> str | None:
+        """PNU 값을 숫자 문자열로 정규화한다."""
         if value is None:
             return None
         if isinstance(value, int):
-            return value
+            return str(value)
         digits = re.sub(r"\D", "", str(value))
         if not digits:
             return None
-        try:
-            return int(digits)
-        except (TypeError, ValueError):
-            return None
+        return digits
 
     @staticmethod
     def _merge_address(full_text: str | None, jibun: str | None) -> str:

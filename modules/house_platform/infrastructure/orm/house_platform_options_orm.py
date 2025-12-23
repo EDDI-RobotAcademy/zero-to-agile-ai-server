@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Column, ForeignKey, String
+from sqlalchemy import BigInteger, Boolean, Column, ForeignKey, Text
 
 from infrastructure.db.postgres import Base
 
@@ -14,4 +14,7 @@ class HousePlatformOptionORM(Base):
     house_platform_id = Column(
         BigInteger, ForeignKey("house_platform.house_platform_id"), nullable=False
     )
-    option = Column("options", String(50), nullable=True)
+    built_in = Column("built_in", Text, nullable=True)
+    near_univ = Column("near_univ", Boolean, nullable=True)
+    near_transport = Column("near_transport", Boolean, nullable=True)
+    near_mart = Column("near_mart", Boolean, nullable=True)

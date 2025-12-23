@@ -20,10 +20,12 @@ class HousePlatformUpsertModel:
     updated_at: datetime | None = None
     domain_id: int | HousePlatformDomainType | None = HousePlatformDomainType.ZIGBANG
     rgst_no: str | None = None
-    pnu_cd: int | None = None
+    pnu_cd: str | None = None
+    is_banned: bool | None = None
     sales_type: str | None = None
     monthly_rent: int | None = None
     room_type: str | None = None
+    residence_type: str | None = None
     contract_area: float | None = None
     exclusive_area: float | None = None
     floor_no: int | None = None
@@ -49,8 +51,11 @@ class HousePlatformManagementUpsertModel:
 
 @dataclass
 class HousePlatformOptionUpsertModel:
-    """옵션 정규화 저장 모델."""
+    """옵션/주변 인프라 규칙 기반 저장 모델."""
 
     house_platform_options_id: int | None = None
     house_platform_id: int | None = None
-    option: str | None = None
+    built_in: Sequence[str] | None = None
+    near_univ: bool | None = None
+    near_transport: bool | None = None
+    near_mart: bool | None = None

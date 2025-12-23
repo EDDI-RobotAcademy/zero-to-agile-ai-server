@@ -37,4 +37,4 @@ class HousePlatformUpsertBundle:
 
     house_platform: HousePlatformUpsertModel
     management: HousePlatformManagementUpsertModel | None = None
-    options: Sequence[HousePlatformOptionUpsertModel] | None = None
+    options: HousePlatformOptionUpsertModel | None = None
