@@ -428,4 +428,4 @@ downloaded_docs/
 .idea/misc.xml
 .idea/zero-to-two-ai-server.iml
 
-tests/pjh/.crawl_state
+*.crawl_state_house_platform
