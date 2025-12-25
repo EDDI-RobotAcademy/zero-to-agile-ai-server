@@ -23,24 +23,25 @@ class LLMAdapter(LLMPort):
         recommendation: RecommendationItem,
         query_summary: str,
     ) -> List[str]:
+        listing_context = recommendation.model_dump(exclude_none=True)
         response = self._client.chat.completions.create(
             model=self._model,
             messages=[
                 {
                     "role": "system",
                     "content": (
-                        "You are a real estate assistant. Provide concise reasons "
-                        "why a house listing is recommended based on the user's request. "
-                        "Respond with a JSON array of short strings only."
+                        "당신은 한국어로 답변하는 부동산 어시스턴트야. "
+                        "대학생인 임차인 요청과 매물 정보를 기반으로 이 매물을 추천하는 이유를 "
+                        "간결하게 제시하세요. 출력은 2~4개의 짧은 한국어 문장으로 이루어진 "
+                        "JSON 배열만 반환합니다. 다른 설명이나 텍스트를 덧붙이지 마세요."
                     ),
                 },
                 {
                     "role": "user",
                     "content": (
-                        f"User request summary: {query_summary}\n"
-                        f"Listing title: {recommendation.title}\n"
-                        f"Listing id: {recommendation.item_id}\n"
-                        "Return 2-4 recommendation reasons."
+                        f"Renter request summary: {query_summary}\n"
+                        f"Listing data (JSON): {json.dumps(listing_context, ensure_ascii=False)}\n"
+                        "Return only the JSON array of reasons."
                     ),
                 },
             ],
