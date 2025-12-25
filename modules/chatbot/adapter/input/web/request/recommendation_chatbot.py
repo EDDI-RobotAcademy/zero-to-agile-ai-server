@@ -30,7 +30,10 @@ class RecommendationItem(BaseModel):
 
 
 class RecommendationChatbotRequest(BaseModel):
-    tone: ChatTone = Field(..., description="답변 말투")
+    tone: ChatTone = Field(
+        default=ChatTone.FORMAL,
+        description="답변 말투 (기본: 존댓말)",
+    )
     message: str = Field(..., description="사용자 질문 또는 요청")
     recommendations: Optional[List[RecommendationItem]] = Field(
         default=None,
