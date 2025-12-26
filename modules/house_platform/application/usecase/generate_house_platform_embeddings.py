@@ -4,7 +4,6 @@ import asyncio
 from typing import Iterable, Sequence
 
 from modules.house_platform.application.dto.embedding_dto import (
-    EmbedRequest,
     HousePlatformEmbeddingResult,
     HousePlatformEmbeddingUpsert,
     HousePlatformSemanticSource,
@@ -15,7 +14,6 @@ from modules.house_platform.application.factory.house_platform_semantic_factory 
 from modules.house_platform.application.port_in.generate_house_platform_embeddings_port import (
     GenerateHousePlatformEmbeddingsPort,
 )
-from modules.house_platform.application.port_out.embedding_port import EmbeddingPort
 from modules.house_platform.application.port_out.house_platform_embedding_port import (
     HousePlatformEmbeddingReadPort,
     HousePlatformEmbeddingWritePort,
@@ -29,7 +27,7 @@ class GenerateHousePlatformEmbeddingsService(GenerateHousePlatformEmbeddingsPort
         self,
         reader: HousePlatformEmbeddingReadPort,
         writer: HousePlatformEmbeddingWritePort,
-        embedder: EmbeddingPort,
+        embedder,
     ):
         self.reader = reader
         self.writer = writer
@@ -75,7 +73,8 @@ class GenerateHousePlatformEmbeddingsService(GenerateHousePlatformEmbeddingsPort
     async def _process_batch(
         self, batch: Sequence[HousePlatformSemanticSource]
     ) -> tuple[int, int]:
-        embed_requests: list[EmbedRequest] = []
+        texts: list[str] = []
+        house_ids: list[int] = []
         desc_updates: dict[int, str | None] = {}
 
         for source in batch:
@@ -85,23 +84,22 @@ class GenerateHousePlatformEmbeddingsService(GenerateHousePlatformEmbeddingsPort
             else:
                 text = build_semantic_house_description(source)
                 desc_updates[source.house_platform_id] = text
-            embed_requests.append(
-                EmbedRequest(record_id=source.house_platform_id, text=text)
-            )
+            texts.append(text)
+            house_ids.append(source.house_platform_id)
 
-        embed_results = await self.embedder.embed(embed_requests)
+        vectors = await self.embedder.embed_texts(texts)
         upserts: list[HousePlatformEmbeddingUpsert] = []
-        for result in embed_results:
+        for house_id, vector in zip(house_ids, vectors):
             upserts.append(
                 HousePlatformEmbeddingUpsert(
-                    house_platform_id=result.record_id,
-                    embedding=result.vector,
-                    semantic_description=desc_updates.get(result.record_id),
+                    house_platform_id=house_id,
+                    embedding=vector,
+                    semantic_description=desc_updates.get(house_id),
                 )
             )
 
         saved = self.writer.upsert_embeddings(upserts)
-        return len(embed_results), saved
+        return len(vectors), saved
 
 
 def _chunked(

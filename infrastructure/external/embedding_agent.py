@@ -6,14 +6,7 @@ from typing import Sequence
 
 import requests
 
-from modules.house_platform.application.dto.embedding_dto import (
-    EmbedRequest,
-    EmbedResult,
-)
-from modules.house_platform.application.port_out.embedding_port import EmbeddingPort
-
-
-class OpenAIEmbeddingAgent(EmbeddingPort):
+class OpenAIEmbeddingAgent:
     """OpenAI text-embedding-3-small 호출 에이전트."""
 
     def __init__(self, api_key: str | None = None, use_dummy: bool = False):
@@ -25,10 +18,9 @@ class OpenAIEmbeddingAgent(EmbeddingPort):
     def is_dummy(self) -> bool:
         return self.use_dummy
 
-    async def embed(self, requests: Sequence[EmbedRequest]) -> Sequence[EmbedResult]:
+    async def embed_texts(self, texts: Sequence[str]) -> Sequence[list[float]]:
         if self.use_dummy:
-            return [self._dummy_embed(req) for req in requests]
-        texts = [req.text for req in requests]
+            return [self._dummy_embed(text) for text in texts]
         resp = await _to_thread(
             requests_post,
             self.endpoint,
@@ -41,16 +33,12 @@ class OpenAIEmbeddingAgent(EmbeddingPort):
         )
         resp.raise_for_status()
         data = resp.json()
-        embeds = [item["embedding"] for item in data["data"]]
-        return [
-            EmbedResult(record_id=req.record_id, vector=vec)
-            for req, vec in zip(requests, embeds)
-        ]
+        return [item["embedding"] for item in data["data"]]
 
-    def _dummy_embed(self, req: EmbedRequest) -> EmbedResult:
-        h = hashlib.sha256(req.text.encode("utf-8")).digest()
+    def _dummy_embed(self, text: str) -> list[float]:
+        h = hashlib.sha256(text.encode("utf-8")).digest()
         vec = [((h[i % len(h)] - 128) / 128) for i in range(1536)]
-        return EmbedResult(record_id=req.record_id, vector=vec)
+        return vec
 
 
 def requests_post(*args, **kwargs):

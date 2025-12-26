@@ -31,18 +31,6 @@ class HousePlatformSemanticSource:
 
 
 @dataclass
-class EmbedRequest:
-    record_id: int
-    text: str
-
-
-@dataclass
-class EmbedResult:
-    record_id: int
-    vector: list[float]
-
-
-@dataclass
 class HousePlatformEmbeddingUpsert:
     house_platform_id: int
     embedding: list[float]
