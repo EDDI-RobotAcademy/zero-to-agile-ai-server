@@ -1,14 +1,24 @@
 import json
 import pika
+
+from infrastructure.external.embedding_agent import OpenAIEmbeddingAgent
+from modules.finder_request.adapter.output.repository.finder_request_repository import FinderRequestRepository
+from modules.finder_request.infrastructure.repository.finder_request_embedding_repository import \
+    FinderRequestEmbeddingRepository
 from modules.mq.application.usecase.process_search_house_usecase import ProcessSearchHouseUseCase
 import os
 from dotenv import load_dotenv
 from infrastructure.db.postgres import get_db_session  # Import DB session factory used by FastAPI router
+from modules.student_house.application.usecase.recommend_student_house_for_finder_request import (
+    RecommendStudentHouseUseCase,
+)
+from modules.student_house.adapter.output.recommendation_agent import (
+    StudentHouseRecommendationAgent,
+)
+from modules.student_house.infrastructure.repository.student_house_embedding_search_repository import \
+    StudentHouseEmbeddingSearchRepository
+from modules.student_house.infrastructure.repository.student_house_search_repository import StudentHouseSearchRepository
 
-# 아직 에이전트 로직 없어서 가라 로직 #
-class AiAgent:
-    def __init__(self):
-        pass
 
 load_dotenv()
 
@@ -45,7 +55,7 @@ def start_search_house_consumer():
     # 한 번에 하나씩만 처리 (AI 작업 보호)
     channel.basic_qos(prefetch_count=1)
 
-    def callback(ch, method, body):
+    def callback(ch, method, properties, body):
         """
         MQ 메시지 수신 콜백
         """
@@ -54,8 +64,22 @@ def start_search_house_consumer():
 
         db = next(get_db_session())
 
-        #ai_agent = HouseRecommendationAgent(...)
-        ai_agent = AiAgent()
+        # 의존성 생성 (router와 동일)
+        finder_request_repo = FinderRequestRepository(db)
+        embedding_repo = FinderRequestEmbeddingRepository()
+        search_repo = StudentHouseSearchRepository()
+        vector_repo = StudentHouseEmbeddingSearchRepository()
+        embedder = OpenAIEmbeddingAgent()
+
+        usecase = RecommendStudentHouseUseCase(
+            finder_request_repo,
+            embedding_repo,
+            search_repo,
+            vector_repo,
+            embedder,
+        )
+
+        ai_agent = StudentHouseRecommendationAgent(usecase)
 
         usecase = ProcessSearchHouseUseCase(db, ai_agent)
 
