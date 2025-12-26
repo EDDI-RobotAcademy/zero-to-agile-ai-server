@@ -8,5 +8,5 @@ redis
 SQLAlchemy
 psycopg2-binary
 pydantic
-jwt
 pika
+pgvector
