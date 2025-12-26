@@ -21,9 +21,7 @@ from modules.student_house.application.port_out.student_house_repository_port im
 from modules.student_house.infrastructure.orm.student_house_orm import (
     StudentHouseORM,
 )
-from modules.student_house.infrastructure.repository.session_helper import (
-    open_session,
-)
+from infrastructure.db.session_helper import open_session
 
 
 class StudentHouseRepository(StudentHouseRepositoryPort):

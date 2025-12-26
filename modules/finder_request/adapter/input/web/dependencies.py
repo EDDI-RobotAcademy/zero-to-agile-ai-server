@@ -1,6 +1,10 @@
 from fastapi import Depends
 from infrastructure.db.postgres import get_db_session
+from infrastructure.external.embedding_agent import OpenAIEmbeddingAgent
 from modules.finder_request.adapter.output.repository.finder_request_repository import FinderRequestRepository
+from modules.finder_request.infrastructure.repository.finder_request_embedding_repository import (
+    FinderRequestEmbeddingRepository,
+)
 from modules.finder_request.application.usecase.create_finder_request_usecase import CreateFinderRequestUseCase
 from modules.finder_request.application.usecase.view_finder_requests_usecase import ViewFinderRequestsUseCase
 from modules.finder_request.application.usecase.get_finder_request_detail_usecase import GetFinderRequestDetailUseCase
@@ -13,11 +17,25 @@ def get_finder_request_repository(db_session_factory=Depends(get_db_session)):
     return FinderRequestRepository(db_session_factory)
 
 
+def get_finder_request_embedding_repository():
+    """FinderRequest 임베딩 저장소 인스턴스 생성"""
+    return FinderRequestEmbeddingRepository()
+
+
+def get_embedding_agent():
+    """임베딩 에이전트 인스턴스 생성"""
+    return OpenAIEmbeddingAgent()
+
+
 def get_create_finder_request_usecase(
-    repository: FinderRequestRepository = Depends(get_finder_request_repository)
+    repository: FinderRequestRepository = Depends(get_finder_request_repository),
+    embedding_repository: FinderRequestEmbeddingRepository = Depends(
+        get_finder_request_embedding_repository
+    ),
+    embedder: OpenAIEmbeddingAgent = Depends(get_embedding_agent),
 ) -> CreateFinderRequestUseCase:
     """CreateFinderRequest UseCase 인스턴스 생성"""
-    return CreateFinderRequestUseCase(repository)
+    return CreateFinderRequestUseCase(repository, embedding_repository, embedder)
 
 
 def get_view_finder_requests_usecase(
@@ -35,10 +53,14 @@ def get_finder_request_detail_usecase(
 
 
 def get_edit_finder_request_usecase(
-    repository: FinderRequestRepository = Depends(get_finder_request_repository)
+    repository: FinderRequestRepository = Depends(get_finder_request_repository),
+    embedding_repository: FinderRequestEmbeddingRepository = Depends(
+        get_finder_request_embedding_repository
+    ),
+    embedder: OpenAIEmbeddingAgent = Depends(get_embedding_agent),
 ) -> EditFinderRequestUseCase:
     """EditFinderRequest UseCase 인스턴스 생성"""
-    return EditFinderRequestUseCase(repository)
+    return EditFinderRequestUseCase(repository, embedding_repository, embedder)
 
 
 def get_delete_finder_request_usecase(

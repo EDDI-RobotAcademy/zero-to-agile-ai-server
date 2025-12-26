@@ -9,9 +9,7 @@ from modules.student_house.application.port_out.university_location_port import 
 from modules.student_house.infrastructure.orm.university_location_orm import (
     UniversityLocationORM,
 )
-from modules.student_house.infrastructure.repository.session_helper import (
-    open_session,
-)
+from infrastructure.db.session_helper import open_session
 
 
 class UniversityLocationRepository(UniversityLocationReadPort):

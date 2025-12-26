@@ -30,9 +30,7 @@ from modules.student_house.infrastructure.orm.student_house_embedding_orm import
 from modules.student_house.infrastructure.orm.student_house_orm import (
     StudentHouseORM,
 )
-from modules.student_house.infrastructure.repository.session_helper import (
-    open_session,
-)
+from infrastructure.db.session_helper import open_session
 
 
 class StudentHouseEmbeddingRepository(

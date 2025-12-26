@@ -48,6 +48,51 @@ class StudentHouseCandidateRaw:
 
 
 @dataclass
+class StudentHouseCandidatePool:
+    """추천 후보군 풀 정보."""
+
+    student_house_id: int
+    house_platform_id: int
+    base_total_score: float
+
+
+@dataclass
+class StudentHouseDetail:
+    """추천 결과 조립용 상세 정보."""
+
+    student_house_id: int
+    house_platform_id: int
+    base_total_score: float
+    risk_score: float | None
+    address: str | None
+    title: str | None
+    domain_id: int | None
+    rgst_no: str | None
+    sales_type: str | None
+    deposit: int | None
+    monthly_rent: int | None
+    manage_cost: int | None
+    room_type: str | None
+    residence_type: str | None
+    contract_area: float | None
+    exclusive_area: float | None
+    floor_no: int | None
+    all_floors: int | None
+    lat_lng: dict | None
+    can_park: bool | None
+    has_elevator: bool | None
+    image_urls: Sequence[str] | None
+    created_at: str | None
+    updated_at: str | None
+    built_in: Sequence[str] | None
+    near_univ: bool | None
+    near_transport: bool | None
+    near_mart: bool | None
+    management_included: Sequence[str] | None
+    management_excluded: Sequence[str] | None
+
+
+@dataclass
 class StudentHouseCandidate:
     """후보군 조회 결과."""
 

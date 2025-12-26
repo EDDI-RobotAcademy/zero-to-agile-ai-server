@@ -108,6 +108,7 @@ class StudentHouseScoringPolicy:
             is_student_recommended=is_recommended,
         )
 
+    # todo: 지금은 그냥 이렇게 처리하나, 실제로는 주변 실거래가 대비 어느 정도로 괜찮은 가격대인지를 기준으로 점수 산출 필요
     def calculate_price_score(
         self, monthly_rent: int | None, manage_cost: int | None
     ) -> float:

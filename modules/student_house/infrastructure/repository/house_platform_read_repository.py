@@ -18,9 +18,7 @@ from modules.student_house.application.dto.student_house_dto import (
 from modules.student_house.application.port_out.house_platform_read_port import (
     HousePlatformReadPort,
 )
-from modules.student_house.infrastructure.repository.session_helper import (
-    open_session,
-)
+from infrastructure.db.session_helper import open_session
 
 
 class HousePlatformReadRepository(HousePlatformReadPort):

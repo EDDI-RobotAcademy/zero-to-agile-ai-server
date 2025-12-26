@@ -7,6 +7,7 @@ from typing import Iterable, Sequence, Set
 from sqlalchemy.orm import Session
 
 from infrastructure.db.postgres import get_db_session
+from infrastructure.db.session_helper import open_session
 from modules.house_platform.application.dto.fetch_and_store_dto import (
     HousePlatformUpsertBundle,
 )
@@ -34,11 +35,11 @@ class HousePlatformRepository(HousePlatformRepositoryPort):
     """house_platform 및 부속 테이블 저장소 구현체."""
 
     def __init__(self, session_factory=None):
-        self._session_factory = session_factory or get_db_session()
+        self._session_factory = session_factory or get_db_session
 
     def exists_rgst_nos(self, rgst_nos: Iterable[str]) -> Set[str]:
         """이미 저장된 rgst_no를 조회한다."""
-        session: Session = self._session_factory()
+        session, generator = open_session(self._session_factory)
         try:
             rows = (
                 session.query(HousePlatformORM.rgst_no)
@@ -47,11 +48,14 @@ class HousePlatformRepository(HousePlatformRepositoryPort):
             )
             return {row[0] for row in rows}
         finally:
-            session.close()
+            if generator:
+                generator.close()
+            else:
+                session.close()
 
     def upsert_batch(self, bundles: Sequence[HousePlatformUpsertBundle]) -> int:
         """매물/관리비/옵션을 묶어 업서트한다."""
-        session: Session = self._session_factory()
+        session, generator = open_session(self._session_factory)
         stored = 0
         try:
             for bundle in bundles:
@@ -92,11 +96,14 @@ class HousePlatformRepository(HousePlatformRepositoryPort):
             session.rollback()
             raise
         finally:
-            session.close()
+            if generator:
+                generator.close()
+            else:
+                session.close()
 
     def soft_delete_by_id(self, house_platform_id: int) -> DeleteHousePlatformResult:
         """is_banned 플래그를 True로 설정한다."""
-        session: Session = self._session_factory()
+        session, generator = open_session(self._session_factory)
         try:
             target = (
                 session.query(HousePlatformORM)
@@ -126,7 +133,10 @@ class HousePlatformRepository(HousePlatformRepositoryPort):
             session.rollback()
             raise
         finally:
-            session.close()
+            if generator:
+                generator.close()
+            else:
+                session.close()
 
     def _to_house_platform_payload(self, model: HousePlatformUpsertModel) -> dict:
         """DTO를 ORM 저장용 dict로 변환한다."""
