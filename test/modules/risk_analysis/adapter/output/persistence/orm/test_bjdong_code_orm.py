@@ -5,7 +5,7 @@ This test module validates the SQLAlchemy ORM mapping to the bjdong_cd_mgm table
 """
 
 import pytest
-from infrastructure.orm.bjdong_code_orm import BjdongCodeORM
+from modules.risk_analysis.adapter.output.persistence.orm.bjdong_code_orm import BjdongCodeORM
 
 
 class TestBjdongCodeORM:

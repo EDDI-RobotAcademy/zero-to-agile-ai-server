@@ -2493,3 +2493,133 @@ if __name__ == "__main__":
 - ❌ Don't skip refactoring (rename property_id for clarity)
 
 ---
+
+
+Refactoring Plan - Move Repositories to Risk Analysis Module
+
+Goal
+Move repositories AND their dependent ORM models from infrastructure to modules/risk_analysis/adapter/output/persistence to achieve complete module independence and align with hexagonal architecture.
+
+Proposed Changes
+
+1. File Moves (Repository Source Code)
+[MOVE] bjdong_code_repository.py
+From: infrastructure/repository/bjdong_code_repository.py
+To: modules/risk_analysis/adapter/output/persistence/repository/bjdong_code_repository.py
+
+[MOVE] house_bldrgst_repository.py
+From: infrastructure/repository/house_bldrgst_repository.py
+To: modules/risk_analysis/adapter/output/persistence/repository/house_bldrgst_repository.py
+
+2. File Moves (ORM Source Code) - NEW
+[MOVE] bjdong_code_orm.py
+From: infrastructure/orm/bjdong_code_orm.py
+To: modules/risk_analysis/adapter/output/persistence/orm/bjdong_code_orm.py
+
+[MOVE] house_bldrgst_orm.py
+From: infrastructure/orm/house_bldrgst_orm.py
+To: modules/risk_analysis/adapter/output/persistence/orm/house_bldrgst_orm.py
+
+3. File Moves (Repository Tests)
+[MOVE] test_bjdong_code_repository.py
+From: test/infrastructure/repository/test_bjdong_code_repository.py
+To: test/modules/risk_analysis/adapter/output/persistence/repository/test_bjdong_code_repository.py
+
+[MOVE] test_house_bldrgst_repository.py
+From: test/infrastructure/repository/test_house_bldrgst_repository.py
+To: test/modules/risk_analysis/adapter/output/persistence/repository/test_house_bldrgst_repository.py
+
+4. File Moves (ORM Tests) - NEW
+[MOVE] test_bjdong_code_orm.py
+From: test/infrastructure/orm/test_bjdong_code_orm.py
+To: test/modules/risk_analysis/adapter/output/persistence/orm/test_bjdong_code_orm.py
+
+[MOVE] test_house_bldrgst_orm.py
+From: test/infrastructure/orm/test_house_bldrgst_orm.py
+To: test/modules/risk_analysis/adapter/output/persistence/orm/test_house_bldrgst_orm.py
+
+5. Import Updates - Application/Service Layer
+[UPDATE] modules/risk_analysis/application/service/address_parser_service.py
+- Change: from infrastructure.repository.bjdong_code_repository import BjdongCodeRepository
+- To: from modules.risk_analysis.adapter.output.persistence.repository.bjdong_code_repository import BjdongCodeRepository
+
+[UPDATE] scripts/test_risk_with_real_data.py
+- Change: from infrastructure.repository.house_bldrgst_repository import HouseBldrgstRepository
+- To: from modules.risk_analysis.adapter.output.persistence.repository.house_bldrgst_repository import HouseBldrgstRepository
+
+[UPDATE] scripts/analyze_house_platform_batch.py
+- Change: from infrastructure.repository.house_bldrgst_repository import HouseBldrgstRepository
+- To: from modules.risk_analysis.adapter.output.persistence.repository.house_bldrgst_repository import HouseBldrgstRepository
+
+6. Import Updates - Repository Internal Imports
+[UPDATE] modules/risk_analysis/adapter/output/persistence/repository/bjdong_code_repository.py
+- Change: from infrastructure.orm.bjdong_code_orm import BjdongCodeORM
+- To: from modules.risk_analysis.adapter.output.persistence.orm.bjdong_code_orm import BjdongCodeORM
+
+[UPDATE] modules/risk_analysis/adapter/output/persistence/repository/house_bldrgst_repository.py
+- Change: from infrastructure.orm.house_bldrgst_orm import HouseBldrgstORM
+- To: from modules.risk_analysis.adapter.output.persistence.orm.house_bldrgst_orm import HouseBldrgstORM
+
+7. Import Updates - Test Files
+[UPDATE] test/modules/risk_analysis/adapter/output/persistence/repository/test_bjdong_code_repository.py
+- Change: from infrastructure.repository.bjdong_code_repository import BjdongCodeRepository
+- To: from modules.risk_analysis.adapter.output.persistence.repository.bjdong_code_repository import BjdongCodeRepository
+- Change: from infrastructure.orm.bjdong_code_orm import BjdongCodeORM
+- To: from modules.risk_analysis.adapter.output.persistence.orm.bjdong_code_orm import BjdongCodeORM
+
+[UPDATE] test/modules/risk_analysis/adapter/output/persistence/repository/test_house_bldrgst_repository.py
+- Change: from infrastructure.repository.house_bldrgst_repository import HouseBldrgstRepository
+- To: from modules.risk_analysis.adapter.output.persistence.repository.house_bldrgst_repository import HouseBldrgstRepository
+- Change: from infrastructure.orm.house_bldrgst_orm import HouseBldrgstORM
+- To: from modules.risk_analysis.adapter.output.persistence.orm.house_bldrgst_orm import HouseBldrgstORM
+
+[UPDATE] test/modules/risk_analysis/adapter/output/persistence/orm/test_bjdong_code_orm.py
+- Change: from infrastructure.orm.bjdong_code_orm import BjdongCodeORM
+- To: from modules.risk_analysis.adapter.output.persistence.orm.bjdong_code_orm import BjdongCodeORM
+
+[UPDATE] test/modules/risk_analysis/adapter/output/persistence/orm/test_house_bldrgst_orm.py
+- Change: from infrastructure.orm.house_bldrgst_orm import HouseBldrgstORM
+- To: from modules.risk_analysis.adapter.output.persistence.orm.house_bldrgst_orm import HouseBldrgstORM
+
+[UPDATE] test/modules/risk_analysis/adapter/output/external_api/test_building_ledger_client.py
+- Change: from infrastructure.orm.bjdong_code_orm import BjdongCodeORM
+- To: from modules.risk_analysis.adapter.output.persistence.orm.bjdong_code_orm import BjdongCodeORM
+
+[UPDATE] test/modules/risk_analysis/application/service/test_address_parser_service.py
+- Change: from infrastructure.orm.bjdong_code_orm import BjdongCodeORM
+- To: from modules.risk_analysis.adapter.output.persistence.orm.bjdong_code_orm import BjdongCodeORM
+
+8. Create __init__.py Files
+[CREATE] modules/risk_analysis/adapter/output/persistence/__init__.py
+[CREATE] modules/risk_analysis/adapter/output/persistence/repository/__init__.py
+[CREATE] modules/risk_analysis/adapter/output/persistence/orm/__init__.py
+[CREATE] test/modules/risk_analysis/adapter/output/persistence/__init__.py
+[CREATE] test/modules/risk_analysis/adapter/output/persistence/repository/__init__.py
+[CREATE] test/modules/risk_analysis/adapter/output/persistence/orm/__init__.py
+
+9. Cleanup (Optional - After Verification)
+[DELETE] infrastructure/repository/bjdong_code_repository.py
+[DELETE] infrastructure/repository/house_bldrgst_repository.py
+[DELETE] infrastructure/repository/__init__.py (if empty)
+[DELETE] infrastructure/orm/bjdong_code_orm.py
+[DELETE] infrastructure/orm/house_bldrgst_orm.py
+[DELETE] test/infrastructure/repository/test_bjdong_code_repository.py
+[DELETE] test/infrastructure/repository/test_house_bldrgst_repository.py
+[DELETE] test/infrastructure/repository/__init__.py (if empty)
+[DELETE] test/infrastructure/orm/test_bjdong_code_orm.py
+[DELETE] test/infrastructure/orm/test_house_bldrgst_orm.py
+[DELETE] test/infrastructure/orm/__init__.py (if empty)
+
+Verification Steps
+1. Run all tests: pytest
+2. Run integration test: python -m scripts.test_risk_with_real_data
+3. Verify no import errors in all affected files
+4. Check that all 99+ tests still pass
+
+Benefits of This Refactoring
+- Complete module independence: Risk Analysis module no longer depends on infrastructure
+- Better alignment with Hexagonal Architecture: Persistence is an Output Adapter
+- Clearer module boundaries: All Risk Analysis data access in one place
+- Easier to test: All dependencies are within the module
+- Future-proof: Can swap persistence implementation without affecting other modules
+

@@ -7,7 +7,7 @@ including UPSERT (insert or update) support for risk analysis results.
 
 from typing import Optional
 from sqlalchemy.orm import Session
-from infrastructure.orm.house_bldrgst_orm import HouseBldrgstORM
+from modules.risk_analysis.adapter.output.persistence.orm.house_bldrgst_orm import HouseBldrgstORM
 from modules.risk_analysis.domain.model import RiskScore
 
 

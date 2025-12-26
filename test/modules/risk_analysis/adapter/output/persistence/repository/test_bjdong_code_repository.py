@@ -6,8 +6,8 @@ This test module validates the data access layer for bjdong code lookups.
 
 import pytest
 from unittest.mock import Mock, MagicMock
-from infrastructure.repository.bjdong_code_repository import BjdongCodeRepository
-from infrastructure.orm.bjdong_code_orm import BjdongCodeORM
+from modules.risk_analysis.adapter.output.persistence.repository.bjdong_code_repository import BjdongCodeRepository
+from modules.risk_analysis.adapter.output.persistence.orm.bjdong_code_orm import BjdongCodeORM
 
 
 class TestBjdongCodeRepository:

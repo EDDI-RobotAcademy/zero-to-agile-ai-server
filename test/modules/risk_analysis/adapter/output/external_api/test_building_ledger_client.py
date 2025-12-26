@@ -258,7 +258,7 @@ class TestBuildingLedgerClientIntegration:
         monkeypatch
     ):
         """Test fetching building info using full address string."""
-        from infrastructure.orm.bjdong_code_orm import BjdongCodeORM
+        from modules.risk_analysis.adapter.output.persistence.orm.bjdong_code_orm import BjdongCodeORM
 
         # Mock the AddressParserService to return proper codes
         sample_bjdong_record = BjdongCodeORM(

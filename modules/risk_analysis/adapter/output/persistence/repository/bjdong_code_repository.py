@@ -8,7 +8,7 @@ which contains Korean legal dong codes used for government API queries.
 from typing import Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-from infrastructure.orm.bjdong_code_orm import BjdongCodeORM
+from modules.risk_analysis.adapter.output.persistence.orm.bjdong_code_orm import BjdongCodeORM
 
 
 class BjdongCodeRepository:

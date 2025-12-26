@@ -7,7 +7,7 @@ This service is used to prepare parameters for Building Ledger API calls.
 from typing import Dict, Optional
 import re
 from sqlalchemy.orm import Session
-from infrastructure.repository.bjdong_code_repository import BjdongCodeRepository
+from modules.risk_analysis.adapter.output.persistence.repository.bjdong_code_repository import BjdongCodeRepository
 
 
 class AddressParsingError(Exception):

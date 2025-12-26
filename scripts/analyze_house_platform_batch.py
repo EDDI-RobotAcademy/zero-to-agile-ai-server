@@ -9,7 +9,7 @@ Usage:
 """
 import logging
 from infrastructure.db.postgres import SessionLocal
-from infrastructure.repository.house_bldrgst_repository import HouseBldrgstRepository
+from modules.risk_analysis.adapter.output.persistence.repository.house_bldrgst_repository import HouseBldrgstRepository
 from modules.house_platform.infrastructure.orm.house_platform_orm import HousePlatformORM
 from modules.risk_analysis.domain.model import RiskScore
 

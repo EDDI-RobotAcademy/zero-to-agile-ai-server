@@ -11,7 +11,7 @@ from modules.risk_analysis.application.service.address_parser_service import (
     AddressParsingError,
     BjdongCodeNotFoundError
 )
-from infrastructure.orm.bjdong_code_orm import BjdongCodeORM
+from modules.risk_analysis.adapter.output.persistence.orm.bjdong_code_orm import BjdongCodeORM
 
 
 class TestAddressParserServiceParsing:

@@ -5,7 +5,7 @@ This test module validates the SQLAlchemy ORM mapping to the house_bldrgst table
 """
 
 import pytest
-from infrastructure.orm.house_bldrgst_orm import HouseBldrgstORM
+from modules.risk_analysis.adapter.output.persistence.orm.house_bldrgst_orm import HouseBldrgstORM
 
 
 class TestHouseBldrgstORM:

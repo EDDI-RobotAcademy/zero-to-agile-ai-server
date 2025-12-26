@@ -7,8 +7,8 @@ including UPSERT functionality.
 
 import pytest
 from unittest.mock import Mock, MagicMock
-from infrastructure.repository.house_bldrgst_repository import HouseBldrgstRepository
-from infrastructure.orm.house_bldrgst_orm import HouseBldrgstORM
+from modules.risk_analysis.adapter.output.persistence.repository.house_bldrgst_repository import HouseBldrgstRepository
+from modules.risk_analysis.adapter.output.persistence.orm.house_bldrgst_orm import HouseBldrgstORM
 from modules.risk_analysis.domain.model import RiskScore
 
 
