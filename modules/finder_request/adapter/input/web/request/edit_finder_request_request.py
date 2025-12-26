@@ -7,7 +7,6 @@ class EditFinderRequestRequest(BaseModel):
     요구서 수정 API 요청 모델
     """
     finder_request_id: int = Field(..., description="수정할 요구서 ID", gt=0)
-    abang_user_id: int = Field(..., description="임차인 사용자 ID", gt=0)
     preferred_region: Optional[str] = Field(None, description="선호 지역", max_length=255)
     # ⭐ 가격 유형 (NULL 허용)
     price_type: Optional[Literal["JEONSE", "MONTHLY", "MIXED", "ETC"]] = Field(

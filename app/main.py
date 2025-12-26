@@ -6,9 +6,10 @@ from dotenv import load_dotenv
 # ✨ 이 줄 추가
 from modules.auth.adapter.input.web.auth_router import router as auth_router
 from modules.finder_request.adapter.input.web.router.finder_request_router import router as finder_request_router
+from modules.chatbot.adapter.input.web.router.chatbot import router as chatbot_router
+from modules.mq.adapter.input.web.router.search_house_router import router as search_house_router
 
 load_dotenv()
-
 app = FastAPI()
 
 # ✅ CORS 미들웨어 추가
@@ -29,9 +30,13 @@ api_router = APIRouter(prefix="/api")
 
 # ✅ auth_router를 api_router 아래에 등록 (/api + /auth = /api/auth)
 api_router.include_router(auth_router)
+api_router.include_router(search_house_router)
 
 # ✅ finder_request_router를 api_router 아래에 등록 (/api + /requests = /api/requests)
 api_router.include_router(finder_request_router)
+
+# ✅ chatbot_router를 api_router 아래에 등록 (/api + /chatbot = /api/chatbot)
+api_router.include_router(chatbot_router)
 
 # 등록한 /api 라우터를 메인 앱에 연결합니다.
 app.include_router(api_router)

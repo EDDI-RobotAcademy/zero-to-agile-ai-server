@@ -3,6 +3,7 @@ from infrastructure.db.postgres import get_db_session
 from modules.finder_request.adapter.output.repository.finder_request_repository import FinderRequestRepository
 from modules.finder_request.application.usecase.create_finder_request_usecase import CreateFinderRequestUseCase
 from modules.finder_request.application.usecase.view_finder_requests_usecase import ViewFinderRequestsUseCase
+from modules.finder_request.application.usecase.get_finder_request_detail_usecase import GetFinderRequestDetailUseCase
 from modules.finder_request.application.usecase.edit_finder_request_usecase import EditFinderRequestUseCase
 from modules.finder_request.application.usecase.delete_finder_request_usecase import DeleteFinderRequestUseCase
 
@@ -24,6 +25,13 @@ def get_view_finder_requests_usecase(
 ) -> ViewFinderRequestsUseCase:
     """ViewFinderRequests UseCase 인스턴스 생성"""
     return ViewFinderRequestsUseCase(repository)
+
+
+def get_finder_request_detail_usecase(
+    repository: FinderRequestRepository = Depends(get_finder_request_repository)
+) -> GetFinderRequestDetailUseCase:
+    """GetFinderRequestDetail UseCase 인스턴스 생성"""
+    return GetFinderRequestDetailUseCase(repository)
 
 
 def get_edit_finder_request_usecase(

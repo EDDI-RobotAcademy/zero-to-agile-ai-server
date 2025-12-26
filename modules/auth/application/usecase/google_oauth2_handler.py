@@ -26,12 +26,8 @@ class GoogleOAuth2Handler:
         email = profile.get("email")
         nickname = profile.get("nickname") or profile.get("name") or email.split("@")[0]
 
-        # user_type 매핑: tenant → FINDER, landlord → OWNER :: 프론트엔드 변경 전 - 향후 프론트엔드 코드 수정 시 변경 및 삭제 가능
-        db_user_type = "FINDER"  # 기본값
-        if user_type == "landlord":
-            db_user_type = "OWNER"
-        elif user_type == "tenant":
-            db_user_type = "FINDER"
+        # user_type 매핑: finder → FINDER, owner → OWNER :: 디폴트는 FINDER
+        db_user_type = {"finder": "FINDER", "owner": "OWNER"}.get(user_type, "FINDER")
 
         # 3) DB에서 user 조회 / 없으면 생성
         user = self.user_repository.find_by_email(email)

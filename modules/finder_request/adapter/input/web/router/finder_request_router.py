@@ -3,14 +3,17 @@ from typing import List
 from modules.finder_request.adapter.input.web.request.create_finder_request_request import CreateFinderRequestRequest
 from modules.finder_request.adapter.input.web.request.edit_finder_request_request import EditFinderRequestRequest
 from modules.finder_request.adapter.input.web.response.finder_request_response import FinderRequestResponse
+from modules.auth.adapter.input.auth_middleware import auth_required
 from modules.finder_request.adapter.input.web.dependencies import (
     get_create_finder_request_usecase,
     get_view_finder_requests_usecase,
+    get_finder_request_detail_usecase,
     get_edit_finder_request_usecase,
     get_delete_finder_request_usecase
 )
 from modules.finder_request.application.usecase.create_finder_request_usecase import CreateFinderRequestUseCase
 from modules.finder_request.application.usecase.view_finder_requests_usecase import ViewFinderRequestsUseCase
+from modules.finder_request.application.usecase.get_finder_request_detail_usecase import GetFinderRequestDetailUseCase
 from modules.finder_request.application.usecase.edit_finder_request_usecase import EditFinderRequestUseCase
 from modules.finder_request.application.usecase.delete_finder_request_usecase import DeleteFinderRequestUseCase
 from modules.finder_request.application.dto.finder_request_dto import CreateFinderRequestDTO
@@ -28,6 +31,7 @@ router = APIRouter(prefix="/requests", tags=["Finder Request"])
 )
 def create_finder_request(
     request: CreateFinderRequestRequest,
+    abang_user_id: int = Depends(auth_required),
     usecase: CreateFinderRequestUseCase = Depends(get_create_finder_request_usecase)
 ):
     """
@@ -44,7 +48,7 @@ def create_finder_request(
     try:
         # Web Request DTO → Application DTO 변환
         dto = CreateFinderRequestDTO(
-            abang_user_id=request.abang_user_id,
+            abang_user_id=abang_user_id,
             preferred_region=request.preferred_region,
             price_type=request.price_type,
             max_deposit=request.max_deposit,
@@ -85,7 +89,7 @@ def create_finder_request(
     description="특정 임차인의 요구서 목록을 조회합니다."
 )
 def view_finder_requests(
-    abang_user_id: int = Query(..., description="임차인 사용자 ID", gt=0),
+    abang_user_id: int = Depends(auth_required),
     usecase: ViewFinderRequestsUseCase = Depends(get_view_finder_requests_usecase)
 ):
     """
@@ -121,6 +125,55 @@ def view_finder_requests(
         )
 
 
+@router.get(
+    "/view/{finder_request_id}",
+    response_model=FinderRequestResponse,
+    summary="임차인 요구서 상세 조회",
+    description="특정 요구서의 상세 정보를 조회합니다."
+)
+def get_finder_request_detail(
+    finder_request_id: int,
+    usecase: GetFinderRequestDetailUseCase = Depends(get_finder_request_detail_usecase)
+):
+    """
+    요구서의 상세 정보를 조회합니다.
+    
+    - **finder_request_id**: 요구서 ID (path parameter)
+    """
+    try:
+        # UseCase 실행
+        result = usecase.execute(finder_request_id)
+        
+        # 요구서가 없으면 404 반환
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"요구서 ID {finder_request_id}를 찾을 수 없습니다."
+            )
+        
+        # Application DTO → Web Response DTO 변환
+        return FinderRequestResponse(
+            finder_request_id=result.finder_request_id,
+            abang_user_id=result.abang_user_id,
+            preferred_region=result.preferred_region,
+            price_type=result.price_type,
+            max_deposit=result.max_deposit,
+            max_rent=result.max_rent,
+            status=result.status,
+            house_type=result.house_type,
+            additional_condition=result.additional_condition,
+            created_at=result.created_at,
+            updated_at=result.updated_at
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"요구서 조회 중 오류가 발생했습니다: {str(e)}"
+        )
+
+
 @router.put(
     "/edit",
     response_model=FinderRequestResponse,
@@ -129,6 +182,7 @@ def view_finder_requests(
 )
 def edit_finder_request(
     request: EditFinderRequestRequest,
+    abang_user_id: int = Depends(auth_required),
     usecase: EditFinderRequestUseCase = Depends(get_edit_finder_request_usecase)
 ):
     """
@@ -148,7 +202,7 @@ def edit_finder_request(
         # UseCase 실행
         result = usecase.execute(
             finder_request_id=request.finder_request_id,
-            abang_user_id=request.abang_user_id,
+            abang_user_id=abang_user_id,
             preferred_region=request.preferred_region,
             price_type=request.price_type,
             max_deposit=request.max_deposit,
@@ -194,7 +248,7 @@ def edit_finder_request(
 )
 def delete_finder_request(
     finder_request_id: int = Query(..., description="삭제할 요구서 ID", gt=0),
-    abang_user_id: int = Query(..., description="임차인 사용자 ID", gt=0),
+    abang_user_id: int = Depends(auth_required),
     usecase: DeleteFinderRequestUseCase = Depends(get_delete_finder_request_usecase)
 ):
     """

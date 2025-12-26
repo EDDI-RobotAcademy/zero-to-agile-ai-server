@@ -7,3 +7,5 @@ PyJWT
 redis
 SQLAlchemy
 psycopg2-binary
+pydantic
+jwt

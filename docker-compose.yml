@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  agilebang-server:
+    image: ghcr.io/${REPO_USER}/agilebang-server:latest
+    container_name: agilebang-server
+    env_file:
+      - .env
+    restart: unless-stopped
+    ports:
+      - "33333:8000"
+    depends_on:
+      - redis
+    networks:
+      - agile-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: agilebang-redis
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: ["sh", "-lc", "redis-server --requirepass \"$REDIS_PASSWORD\""]
+    networks:
+      - agile-net
+
+networks:
+  agile-net:
+    external: true
