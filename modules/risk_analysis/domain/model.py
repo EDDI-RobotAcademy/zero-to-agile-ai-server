@@ -52,7 +52,7 @@ class RiskScore:
     Risk evaluation result for a property.
 
     Attributes:
-        property_id: Unique identifier for the property
+        house_platform_id: Unique identifier for the property (FK to house_platform table)
         total_score: Total risk score (0-100, higher is riskier)
         violation_risk: Risk score from building violations (0-30)
         price_deviation_risk: Risk score from price deviation (0-30)
@@ -61,7 +61,7 @@ class RiskScore:
         risk_level: Overall risk level (LOW, MEDIUM, HIGH)
         warnings: List of warning messages for the user
     """
-    property_id: str
+    house_platform_id: str
     total_score: float
     violation_risk: float
     price_deviation_risk: float

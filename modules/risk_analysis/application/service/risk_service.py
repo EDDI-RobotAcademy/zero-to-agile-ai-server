@@ -32,7 +32,7 @@ class RiskAnalysisService:
         self,
         building: BuildingInfo,
         transaction: TransactionInfo,
-        property_id: str,
+        house_platform_id: str,
         historical_transactions: List[TransactionInfo] = None
     ) -> RiskScore:
         """
@@ -41,18 +41,18 @@ class RiskAnalysisService:
         Args:
             building: Building information
             transaction: Current transaction information
-            property_id: Unique identifier for the property
+            house_platform_id: Unique identifier for the property (FK to house_platform table)
             historical_transactions: List of historical transactions for price comparison
 
         Returns:
             RiskScore: Comprehensive risk assessment
 
         Raises:
-            ValueError: If property_id is empty
+            ValueError: If house_platform_id is empty
         """
         # Validate input
-        if not property_id or property_id.strip() == "":
-            raise ValueError("Property ID cannot be empty")
+        if not house_platform_id or house_platform_id.strip() == "":
+            raise ValueError("House platform ID cannot be empty")
 
         # Use empty list if no historical transactions provided
         if historical_transactions is None:
@@ -68,6 +68,6 @@ class RiskAnalysisService:
 
         # Evaluate risk
         evaluator = RiskEvaluator(rules)
-        risk_score = evaluator.evaluate(building, transaction, property_id)
+        risk_score = evaluator.evaluate(building, transaction, house_platform_id)
 
         return risk_score

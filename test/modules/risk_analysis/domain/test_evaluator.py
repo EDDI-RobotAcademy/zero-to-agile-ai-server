@@ -74,10 +74,10 @@ class TestRiskEvaluator:
         ]
         evaluator = RiskEvaluator(rules)
 
-        result = evaluator.evaluate(sample_building, sample_transaction, property_id="PROP-001")
+        result = evaluator.evaluate(sample_building, sample_transaction, house_platform_id="PROP-001")
 
         assert isinstance(result, RiskScore)
-        assert result.property_id == "PROP-001"
+        assert result.house_platform_id == "PROP-001"
         assert result.total_score >= 0.0
         assert result.total_score <= 100.0
         assert result.violation_risk == 0.0  # No violation
@@ -110,7 +110,7 @@ class TestRiskEvaluator:
         ]
         evaluator = RiskEvaluator(rules)
 
-        result = evaluator.evaluate(building, transaction, property_id="PROP-LOW")
+        result = evaluator.evaluate(building, transaction, house_platform_id="PROP-LOW")
 
         assert result.risk_level == "LOW"
         assert result.total_score < 30.0
@@ -141,7 +141,7 @@ class TestRiskEvaluator:
         ]
         evaluator = RiskEvaluator(rules)
 
-        result = evaluator.evaluate(building, transaction, property_id="PROP-MED")
+        result = evaluator.evaluate(building, transaction, house_platform_id="PROP-MED")
 
         assert result.risk_level == "MEDIUM"
         assert 30.0 <= result.total_score < 60.0
@@ -172,7 +172,7 @@ class TestRiskEvaluator:
         ]
         evaluator = RiskEvaluator(rules)
 
-        result = evaluator.evaluate(building, transaction, property_id="PROP-HIGH")
+        result = evaluator.evaluate(building, transaction, house_platform_id="PROP-HIGH")
 
         assert result.risk_level == "HIGH"
         assert result.total_score >= 60.0
@@ -203,7 +203,7 @@ class TestRiskEvaluator:
         ]
         evaluator = RiskEvaluator(rules)
 
-        result = evaluator.evaluate(building, transaction, property_id="PROP-WARN")
+        result = evaluator.evaluate(building, transaction, house_platform_id="PROP-WARN")
 
         assert isinstance(result.warnings, list)
         assert len(result.warnings) > 0
@@ -213,7 +213,7 @@ class TestRiskEvaluator:
         """Test that evaluator with no rules returns zero risk score."""
         evaluator = RiskEvaluator([])
 
-        result = evaluator.evaluate(sample_building, sample_transaction, property_id="PROP-EMPTY")
+        result = evaluator.evaluate(sample_building, sample_transaction, house_platform_id="PROP-EMPTY")
 
         assert result.total_score == 0.0
         assert result.risk_level == "LOW"
@@ -229,10 +229,10 @@ class TestRiskEvaluator:
         ]
         evaluator = RiskEvaluator(rules)
 
-        result = evaluator.evaluate(sample_building, sample_transaction, property_id="PROP-FULL")
+        result = evaluator.evaluate(sample_building, sample_transaction, house_platform_id="PROP-FULL")
 
         # Check all fields are present and have correct types
-        assert isinstance(result.property_id, str)
+        assert isinstance(result.house_platform_id, str)
         assert isinstance(result.total_score, float)
         assert isinstance(result.violation_risk, float)
         assert isinstance(result.price_deviation_risk, float)
@@ -370,7 +370,7 @@ class TestRiskEvaluatorIntegration:
 
         # Verify all required fields are populated
         for result in [low_result, medium_result, high_result]:
-            assert result.property_id is not None
+            assert result.house_platform_id is not None
             assert result.total_score >= 0.0
             assert result.risk_level in ["LOW", "MEDIUM", "HIGH"]
             assert isinstance(result.warnings, list)

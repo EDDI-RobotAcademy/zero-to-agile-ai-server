@@ -77,12 +77,12 @@ class TestRiskAnalysisService:
         result = service.analyze_property(
             building=sample_building,
             transaction=sample_transaction,
-            property_id="PROP-001",
+            house_platform_id="PROP-001",
             historical_transactions=historical_transactions
         )
 
         assert isinstance(result, RiskScore)
-        assert result.property_id == "PROP-001"
+        assert result.house_platform_id == "PROP-001"
         assert result.total_score >= 0.0
         assert result.risk_level in ["LOW", "MEDIUM", "HIGH"]
 
@@ -92,12 +92,12 @@ class TestRiskAnalysisService:
         sample_building,
         sample_transaction
     ):
-        """Test that analyze_property raises ValueError for empty property_id."""
-        with pytest.raises(ValueError, match="Property ID cannot be empty"):
+        """Test that analyze_property raises ValueError for empty house_platform_id."""
+        with pytest.raises(ValueError, match="House platform ID cannot be empty"):
             service.analyze_property(
                 building=sample_building,
                 transaction=sample_transaction,
-                property_id="",
+                house_platform_id="",
                 historical_transactions=[]
             )
 
@@ -111,7 +111,7 @@ class TestRiskAnalysisService:
         result = service.analyze_property(
             building=sample_building,
             transaction=sample_transaction,
-            property_id="PROP-NO-HIST"
+            house_platform_id="PROP-NO-HIST"
         )
 
         assert isinstance(result, RiskScore)
@@ -128,7 +128,7 @@ class TestRiskAnalysisService:
         result = service.analyze_property(
             building=sample_building,
             transaction=sample_transaction,
-            property_id="PROP-FULL",
+            house_platform_id="PROP-FULL",
             historical_transactions=historical_transactions
         )
 

@@ -127,7 +127,7 @@ def risk_score_to_dict(risk_score: RiskScore) -> Dict:
         Dictionary representation
     """
     return {
-        "property_id": risk_score.property_id,
+        "house_platform_id": risk_score.house_platform_id,
         "total_score": risk_score.total_score,
         "violation_risk": risk_score.violation_risk,
         "price_deviation_risk": risk_score.price_deviation_risk,
@@ -151,7 +151,7 @@ def collect_samples():
     fail_count = 0
 
     for idx, prop_data in enumerate(SAMPLE_PROPERTIES, start=1):
-        property_id = f"PROP-{idx:03d}"
+        house_platform_id = f"PROP-{idx:03d}"
 
         try:
             # Create building info
@@ -178,7 +178,7 @@ def collect_samples():
             risk_score = service.analyze_property(
                 building=building,
                 transaction=transaction,
-                property_id=property_id,
+                house_platform_id=house_platform_id,
                 historical_transactions=historical
             )
 
@@ -188,11 +188,11 @@ def collect_samples():
             results.append(result_dict)
 
             success_count += 1
-            logger.info(f"✓ {property_id}: {prop_data['address']} - {risk_score.risk_level} ({risk_score.total_score:.1f})")
+            logger.info(f"✓ {house_platform_id}: {prop_data['address']} - {risk_score.risk_level} ({risk_score.total_score:.1f})")
 
         except Exception as e:
             fail_count += 1
-            logger.error(f"✗ {property_id}: {prop_data['address']} - Error: {str(e)}")
+            logger.error(f"✗ {house_platform_id}: {prop_data['address']} - Error: {str(e)}")
 
     logger.info(f"\nCollection complete: {success_count} succeeded, {fail_count} failed")
 

@@ -210,3 +210,126 @@ class TestBuildingLedgerClient:
         params = call_args[1]['params']
         assert 'serviceKey' in params
         assert params['serviceKey'] == client.api_key
+
+
+class TestBuildingLedgerClientIntegration:
+    """Integration tests for BuildingLedgerClient with AddressParserService."""
+
+    @pytest.fixture
+    def client(self):
+        """Create a BuildingLedgerClient instance for testing."""
+        return BuildingLedgerClient()
+
+    @pytest.fixture
+    def mock_db_session(self):
+        """Create a mock database session."""
+        return Mock()
+
+    @pytest.fixture
+    def sample_xml_response(self):
+        """Sample successful XML response from Building Ledger API."""
+        return """<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <header>
+    <resultCode>00</resultCode>
+    <resultMsg>NORMAL SERVICE.</resultMsg>
+  </header>
+  <body>
+    <items>
+      <item>
+        <platPlc>서울특별시 강남구 역삼동 777-88</platPlc>
+        <useAprDay>20200115</useAprDay>
+        <vlRatEstmTotArea>0</vlRatEstmTotArea>
+        <etcStrct>철근콘크리트구조</etcStrct>
+        <heit>15.5</heit>
+        <strctCdNm>철근콘크리트구조</strctCdNm>
+      </item>
+    </items>
+  </body>
+</response>"""
+
+    @patch('modules.risk_analysis.adapter.output.external_api.building_ledger_client.requests.get')
+    def test_get_building_info_by_address_success(
+        self,
+        mock_get,
+        client,
+        mock_db_session,
+        sample_xml_response,
+        monkeypatch
+    ):
+        """Test fetching building info using full address string."""
+        from infrastructure.orm.bjdong_code_orm import BjdongCodeORM
+
+        # Mock the AddressParserService to return proper codes
+        sample_bjdong_record = BjdongCodeORM(
+            full_cd="1114010400",
+            sido_nm="서울특별시",
+            sigungu_nm="강남구",
+            bjdong_nm="역삼동",
+            bjdong_full_nm="서울특별시 강남구 역삼동",
+            del_yn="0"
+        )
+
+        mock_find = Mock(return_value=sample_bjdong_record)
+        monkeypatch.setattr(
+            "modules.risk_analysis.application.service.address_parser_service.BjdongCodeRepository.find_by_address_components",
+            mock_find
+        )
+
+        # Mock the HTTP response
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.text = sample_xml_response
+        mock_response.encoding = 'utf-8'
+        mock_get.return_value = mock_response
+
+        # Execute
+        address = "서울시 강남구 역삼동 777-88"
+        result = client.get_building_info_by_address(address, mock_db_session)
+
+        # Assert
+        assert result is not None
+        assert result['platPlc'] == "서울특별시 강남구 역삼동 777-88"
+        assert result['useAprDay'] == "20200115"
+
+        # Verify the API was called with correct parameters
+        call_args = mock_get.call_args
+        params = call_args[1]['params']
+        assert params['sigunguCd'] == "11140"  # First 5 digits of full_cd
+        assert params['bjdongCd'] == "10400"   # Last 5 digits of full_cd
+        assert params['bun'] == "777"
+        assert params['ji'] == "88"
+
+    def test_get_building_info_by_address_invalid_address_raises_error(
+        self,
+        client,
+        mock_db_session
+    ):
+        """Test that invalid address raises AddressParsingError."""
+        from modules.risk_analysis.application.service.address_parser_service import AddressParsingError
+
+        invalid_address = "InvalidAddress"
+
+        with pytest.raises(AddressParsingError):
+            client.get_building_info_by_address(invalid_address, mock_db_session)
+
+    def test_get_building_info_by_address_code_not_found_raises_error(
+        self,
+        client,
+        mock_db_session,
+        monkeypatch
+    ):
+        """Test that BjdongCodeNotFoundError is raised when code is not found."""
+        from modules.risk_analysis.application.service.address_parser_service import BjdongCodeNotFoundError
+
+        # Mock repository to return None
+        mock_find = Mock(return_value=None)
+        monkeypatch.setattr(
+            "modules.risk_analysis.application.service.address_parser_service.BjdongCodeRepository.find_by_address_components",
+            mock_find
+        )
+
+        address = "서울시 강남구 존재하지않는동 123"
+
+        with pytest.raises(BjdongCodeNotFoundError):
+            client.get_building_info_by_address(address, mock_db_session)

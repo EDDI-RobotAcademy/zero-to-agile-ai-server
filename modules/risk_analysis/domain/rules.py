@@ -194,7 +194,7 @@ class RiskEvaluator:
         self,
         building: BuildingInfo,
         transaction: TransactionInfo,
-        property_id: str
+        house_platform_id: str
     ) -> RiskScore:
         """
         Evaluate comprehensive risk score for a property.
@@ -202,7 +202,7 @@ class RiskEvaluator:
         Args:
             building: Building information from Building Ledger API
             transaction: Transaction information from Transaction Price API
-            property_id: Unique identifier for the property
+            house_platform_id: Unique identifier for the property (FK to house_platform table)
 
         Returns:
             RiskScore with total score, individual risk scores, level, and warnings
@@ -256,7 +256,7 @@ class RiskEvaluator:
             warnings.append("실거래가 대비 10% 이상 가격 차이")
 
         return RiskScore(
-            property_id=property_id,
+            house_platform_id=house_platform_id,
             total_score=total_score,
             violation_risk=violation_risk,
             price_deviation_risk=price_deviation_risk,

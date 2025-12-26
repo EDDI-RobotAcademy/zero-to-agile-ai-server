@@ -235,3 +235,37 @@ class BuildingLedgerClient:
         building_info = {child.tag: child.text for child in item}
 
         return building_info
+
+    def get_building_info_by_address(
+        self,
+        address: str,
+        db
+    ) -> Dict:
+        """
+        Fetch building ledger info using full address string.
+
+        This is a convenience method that parses the address and calls get_building_info().
+
+        Args:
+            address: Full address (e.g., "서울시 강남구 역삼동 777-88")
+            db: Database session for bjdong code lookup
+
+        Returns:
+            Building ledger data dictionary
+
+        Raises:
+            AddressParsingError: If address format is invalid
+            BjdongCodeNotFoundError: If legal dong code is not found in database
+            BuildingLedgerAPIError: If API request fails
+        """
+        from modules.risk_analysis.application.service.address_parser_service import AddressParserService
+
+        parser = AddressParserService(db)
+        codes = parser.parse_address_and_get_codes(address)
+
+        return self.get_building_info(
+            sigungu_cd=codes["sigungu_cd"],
+            bjdong_cd=codes["bjdong_cd"],
+            bun=codes["bun"],
+            ji=codes["ji"]
+        )

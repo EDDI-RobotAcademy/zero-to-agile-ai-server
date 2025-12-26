@@ -107,7 +107,7 @@ class TestRiskScore:
     def test_risk_score_creation_with_all_fields(self):
         """Test that RiskScore can be created with all required fields."""
         risk_score = RiskScore(
-            property_id="PROP-001",
+            house_platform_id="PROP-001",
             total_score=45.0,
             violation_risk=0.0,
             price_deviation_risk=15.0,
@@ -117,7 +117,7 @@ class TestRiskScore:
             warnings=["내진설계 미적용", "실거래가 대비 10% 높음"]
         )
 
-        assert risk_score.property_id == "PROP-001"
+        assert risk_score.house_platform_id == "PROP-001"
         assert risk_score.total_score == 45.0
         assert risk_score.violation_risk == 0.0
         assert risk_score.price_deviation_risk == 15.0
@@ -129,7 +129,7 @@ class TestRiskScore:
     def test_risk_score_with_low_risk_level(self):
         """Test RiskScore with LOW risk level."""
         risk_score = RiskScore(
-            property_id="PROP-002",
+            house_platform_id="PROP-002",
             total_score=20.0,
             violation_risk=0.0,
             price_deviation_risk=10.0,
@@ -146,7 +146,7 @@ class TestRiskScore:
     def test_risk_score_with_high_risk_level(self):
         """Test RiskScore with HIGH risk level."""
         risk_score = RiskScore(
-            property_id="PROP-003",
+            house_platform_id="PROP-003",
             total_score=75.0,
             violation_risk=30.0,
             price_deviation_risk=20.0,
@@ -164,7 +164,7 @@ class TestRiskScore:
     def test_risk_score_with_empty_warnings(self):
         """Test RiskScore with empty warnings list."""
         risk_score = RiskScore(
-            property_id="PROP-004",
+            house_platform_id="PROP-004",
             total_score=25.0,
             violation_risk=0.0,
             price_deviation_risk=15.0,
