@@ -1,7 +1,8 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker, declarative_base, Session
 import os
 from dotenv import load_dotenv
+from typing import Generator
 
 load_dotenv()
 
@@ -25,6 +26,9 @@ SessionLocal = sessionmaker(
 
 Base = declarative_base()
 
-def get_db_session():
-    """SessionLocal factory를 반환 (Repository에서 호출 가능)"""
-    return SessionLocal
+def get_db_session() -> Generator[Session, None, None]:
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

@@ -31,6 +31,7 @@ router = APIRouter(prefix="/requests", tags=["Finder Request"])
 )
 def create_finder_request(
     request: CreateFinderRequestRequest,
+    abang_user_id: int = Depends(auth_required),
     usecase: CreateFinderRequestUseCase = Depends(get_create_finder_request_usecase)
 ):
     """
@@ -47,7 +48,7 @@ def create_finder_request(
     try:
         # Web Request DTO → Application DTO 변환
         dto = CreateFinderRequestDTO(
-            abang_user_id=request.abang_user_id,
+            abang_user_id=abang_user_id,
             preferred_region=request.preferred_region,
             price_type=request.price_type,
             max_deposit=request.max_deposit,
@@ -181,6 +182,7 @@ def get_finder_request_detail(
 )
 def edit_finder_request(
     request: EditFinderRequestRequest,
+    abang_user_id: int = Depends(auth_required),
     usecase: EditFinderRequestUseCase = Depends(get_edit_finder_request_usecase)
 ):
     """
@@ -200,7 +202,7 @@ def edit_finder_request(
         # UseCase 실행
         result = usecase.execute(
             finder_request_id=request.finder_request_id,
-            abang_user_id=request.abang_user_id,
+            abang_user_id=abang_user_id,
             preferred_region=request.preferred_region,
             price_type=request.price_type,
             max_deposit=request.max_deposit,

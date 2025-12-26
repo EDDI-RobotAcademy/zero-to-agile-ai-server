@@ -7,7 +7,6 @@ class CreateFinderRequestRequest(BaseModel):
     요구서 생성 API 요청 모델
     프론트엔드에서 받는 파라미터
     """
-    abang_user_id: int = Field(..., description="임차인 사용자 ID", gt=0)
     preferred_region: Optional[str] = Field(None, description="선호 지역", max_length=255)
     # ⭐ 가격 유형 (NULL 허용)
     price_type: Optional[Literal["JEONSE", "MONTHLY", "MIXED", "ETC"]] = Field(None,description="가격 유형 (JEONSE / MONTHLY / MIXED / ETC)")
