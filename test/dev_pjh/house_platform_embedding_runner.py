@@ -16,9 +16,7 @@ if REPO_ROOT not in sys.path:
 from modules.house_platform.application.usecase.generate_house_platform_embeddings import (
     GenerateHousePlatformEmbeddingsService,
 )
-from modules.house_platform.infrastructure.client.embedding_agent import (
-    OpenAIEmbeddingAgent,
-)
+from infrastructure.external.embedding_agent import OpenAIEmbeddingAgent
 from modules.house_platform.infrastructure.repository.house_platform_embedding_repository import (
     HousePlatformEmbeddingRepository,
 )
