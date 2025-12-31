@@ -1,6 +1,20 @@
+from __future__ import annotations
+
+import asyncio
 from typing import Optional
-from modules.finder_request.application.port.finder_request_repository_port import FinderRequestRepositoryPort
-from modules.finder_request.application.dto.finder_request_dto import FinderRequestDTO
+
+from modules.finder_request.application.dto.finder_request_dto import (
+    FinderRequestDTO,
+)
+from modules.finder_request.application.factory.finder_request_embedding_factory import (
+    build_finder_request_embedding_text,
+)
+from modules.finder_request.application.port.finder_request_embedding_port import (
+    FinderRequestEmbeddingPort,
+)
+from modules.finder_request.application.port.finder_request_repository_port import (
+    FinderRequestRepositoryPort,
+)
 from modules.finder_request.domain.finder_request import FinderRequest
 
 
@@ -9,8 +23,15 @@ class EditFinderRequestUseCase:
     임차인의 요구서 수정 유스케이스
     """
     
-    def __init__(self, finder_request_repository: FinderRequestRepositoryPort):
+    def __init__(
+        self,
+        finder_request_repository: FinderRequestRepositoryPort,
+        embedding_repository: FinderRequestEmbeddingPort | None = None,
+        embedder=None,
+    ):
         self.finder_request_repository = finder_request_repository
+        self.embedding_repository = embedding_repository
+        self.embedder = embedder
     
     def execute(
         self,
@@ -69,6 +90,8 @@ class EditFinderRequestUseCase:
         
         if not updated:
             return None
+
+        self._upsert_embedding(updated)
         
         # DTO로 변환하여 반환
         return FinderRequestDTO(
@@ -84,3 +107,31 @@ class EditFinderRequestUseCase:
             created_at=updated.created_at,
             updated_at=updated.updated_at
         )
+
+    def _upsert_embedding(self, request: FinderRequest) -> None:
+        """요구서 임베딩을 저장한다."""
+        if not self.embedding_repository or not self.embedder:
+            return
+        text = build_finder_request_embedding_text(request)
+        embedding = _run_async(self.embedder.embed_texts([text]))
+        if embedding:
+            self.embedding_repository.upsert_embedding(
+                request.finder_request_id, embedding[0]
+            )
+
+
+def _run_async(coro):
+    """동기 컨텍스트에서 코루틴을 실행한다."""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        new_loop = asyncio.new_event_loop()
+        try:
+            return new_loop.run_until_complete(coro)
+        finally:
+            new_loop.close()
+
+    return asyncio.run(coro)
