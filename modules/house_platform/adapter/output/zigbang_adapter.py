@@ -78,6 +78,12 @@ class ZigbangAdapter:
                 errors.append(f"상세 조회/매핑 실패 {item_id}: {exc}")
         return converted, errors
 
+    def convert_detail_item(
+        self, raw_item: Mapping[str, Any]
+    ) -> HousePlatformUpsertBundle:
+        """직방 상세 응답을 업서트 번들로 변환한다."""
+        return self._map_raw_item_to_bundle(raw_item)
+
     def _normalize_item_ids(self, item_ids: Iterable[Any]) -> list[int]:
         normalized: list[int] = []
         for raw in item_ids:
