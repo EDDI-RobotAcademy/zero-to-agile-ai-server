@@ -1,12 +1,12 @@
 from typing import List
 
-from modules.chatbot.adapter.input.web.request.recommendation_chatbot import (
+from modules.ai_explaination.adapter.input.web.request.recommendation_chatbot import (
     RecommendationItem,
 )
-from modules.chatbot.adapter.input.web.request.tenant_preference import (
+from modules.ai_explaination.adapter.input.web.request.tenant_preference import (
     TenantPreferenceRequest,
 )
-from modules.chatbot.adapter.input.web.response.recommendation_result import (
+from modules.ai_explaination.adapter.input.web.response.recommendation_result import (
     RecommendationResultResponse,
 )
 

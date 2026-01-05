@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 from pydantic import BaseModel, Field
 
-from modules.chatbot.domain.tone import ChatTone
+from modules.ai_explaination.domain.tone import ChatTone
 
 
 class TenantPreferenceRequest(BaseModel):

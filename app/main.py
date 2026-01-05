@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 # ✨ 이 줄 추가
 from modules.auth.adapter.input.web.auth_router import router as auth_router
 from modules.finder_request.adapter.input.web.router.finder_request_router import router as finder_request_router
-from modules.chatbot.adapter.input.web.router.chatbot import router as chatbot_router
+from modules.ai_explaination.adapter.input.web.router.chatbot import router as chatbot_router
 from modules.mq.adapter.input.web.router.search_house_router import router as search_house_router
 from modules.student_house.adapter.input.web.router.student_house_router import (
     router as student_house_router,
@@ -38,7 +38,7 @@ api_router.include_router(search_house_router)
 # ✅ finder_request_router를 api_router 아래에 등록 (/api + /requests = /api/requests)
 api_router.include_router(finder_request_router)
 
-# ✅ chatbot_router를 api_router 아래에 등록 (/api + /chatbot = /api/chatbot)
+# ✅ chatbot_router를 api_router 아래에 등록 (/api + /ai_explaination = /api/ai_explaination)
 api_router.include_router(chatbot_router)
 
 # ✅ student_house_router를 api_router 아래에 등록 (/api + /student_house = /api/student_house)

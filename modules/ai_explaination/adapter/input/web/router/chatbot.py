@@ -1,16 +1,16 @@
 from fastapi import APIRouter
 
-from modules.chatbot.adapter.input.web.request.recommendation_chatbot import (
+from modules.ai_explaination.adapter.input.web.request.recommendation_chatbot import (
     RecommendationChatbotRequest,
 )
-from modules.chatbot.adapter.input.web.response.recommendation_chatbot import (
+from modules.ai_explaination.adapter.input.web.response.recommendation_chatbot import (
     RecommendationChatbotResponse,
 )
-from modules.chatbot.application.usecase.explain_recommendation_usecase import (
+from modules.ai_explaination.application.usecase.explain_recommendation_usecase import (
     ExplainRecommendationUseCase,
 )
 
-router = APIRouter(prefix="/chatbot", tags=["chatbot"])
+router = APIRouter(prefix="/ai_explaination", tags=["ai_explaination"])
 
 @router.post(
     "/recommendation",

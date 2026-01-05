@@ -1,7 +1,7 @@
 from typing import List
 from pydantic import BaseModel, Field
 
-from modules.chatbot.adapter.input.web.request.recommendation_chatbot import (
+from modules.ai_explaination.adapter.input.web.request.recommendation_chatbot import (
     RecommendationItem,
 )
 

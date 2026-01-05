@@ -1,13 +1,13 @@
-from modules.chatbot.adapter.input.web.request.recommendation_chatbot import (
+from modules.ai_explaination.adapter.input.web.request.recommendation_chatbot import (
     RecommendationChatbotRequest,
     RecommendationItem,
 )
-from modules.chatbot.adapter.input.web.response.recommendation_chatbot import (
+from modules.ai_explaination.adapter.input.web.response.recommendation_chatbot import (
     RecommendationChatbotResponse,
 )
-from modules.chatbot.adapter.output.llm_adapter import LLMAdapter
-from modules.chatbot.application.port.llm_port import LLMPort
-from modules.chatbot.domain.tone import ChatTone
+from modules.ai_explaination.adapter.output.llm_adapter import LLMAdapter
+from modules.ai_explaination.application.port.llm_port import LLMPort
+from modules.ai_explaination.domain.tone import ChatTone
 
 
 class ExplainRecommendationUseCase:
@@ -23,12 +23,19 @@ class ExplainRecommendationUseCase:
 
     def _build_explanation(self, request: RecommendationChatbotRequest) -> str:
         base_message = self._format_recommendations(request)
+
+        # 말투에 따라 인사말 선택
         if request.tone == ChatTone.CASUAL:
-            return f"알려줄게! {base_message}"
-        return f"안내드리겠습니다. {base_message}"
+            greeting = "알려줄게!"
+        else:
+            greeting = "안내드리겠습니다."
+
+        return f"{greeting} {base_message}"
 
     def _format_recommendations(self, request: RecommendationChatbotRequest) -> str:
         if not request.recommendations:
+            if request.tone == ChatTone.CASUAL:
+                return f"요청 메시지를 확인했어: {request.message}"
             return f"요청 메시지를 확인했습니다: {request.message}"
 
         formatted_items = []
@@ -38,9 +45,17 @@ class ExplainRecommendationUseCase:
                 query_summary=request.message or "",
                 tone=request.tone,
             )
-            reason_text = ", ".join(reasons) if reasons else "추천 이유 정보가 없습니다"
+            reason_text = ", ".join(reasons) if reasons else self._select_tone(
+                formal="추천 이유 정보가 없습니다",
+                casual="추천 이유 정보가 없어",
+                tone=request.tone,
+            )
             formatted_items.append(f"{item.title} ({item.item_id}): {reason_text}")
+
         joined_items = " | ".join(formatted_items)
+
+        if request.tone == ChatTone.CASUAL:
+            return f"추천 매물 설명이야: {joined_items}"
         return f"추천 매물 설명입니다: {joined_items}"
 
     def _collect_reasons(
