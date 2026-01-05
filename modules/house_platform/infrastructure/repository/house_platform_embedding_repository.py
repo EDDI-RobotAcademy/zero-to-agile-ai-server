@@ -7,6 +7,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from infrastructure.db.postgres import get_db_session
+from infrastructure.db.session_helper import open_session
 from modules.house_platform.application.dto.embedding_dto import (
     HousePlatformEmbeddingUpsert,
     HousePlatformSemanticSource,
@@ -33,11 +34,11 @@ class HousePlatformEmbeddingRepository(
     """house_platform 임베딩 저장소 구현체."""
 
     def __init__(self, session_factory=None):
-        self._session_factory = session_factory or get_db_session()
+        self._session_factory = session_factory or get_db_session
 
     def fetch_all_sources(self) -> Sequence[HousePlatformSemanticSource]:
         """임베딩에 필요한 조인 데이터를 조회한다."""
-        session: Session = self._session_factory()
+        session, generator = open_session(self._session_factory)
         try:
             rows = (
                 session.query(
@@ -71,11 +72,14 @@ class HousePlatformEmbeddingRepository(
             )
             return [self._to_source(*row) for row in rows]
         finally:
-            session.close()
+            if generator:
+                generator.close()
+            else:
+                session.close()
 
     def upsert_embeddings(self, items: Iterable[HousePlatformEmbeddingUpsert]) -> int:
         """임베딩 벡터와 설명문을 업서트한다."""
-        session: Session = self._session_factory()
+        session, generator = open_session(self._session_factory)
         saved = 0
         try:
             for item in items:
@@ -106,7 +110,10 @@ class HousePlatformEmbeddingRepository(
             session.rollback()
             raise
         finally:
-            session.close()
+            if generator:
+                generator.close()
+            else:
+                session.close()
 
     def _to_source(
         self,

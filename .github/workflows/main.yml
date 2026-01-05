@@ -3,7 +3,7 @@ name: Deploy agilebang-server via Docker (SSH)
 on:
   push:
     branches:
-      - main   
+      - main     
  
 jobs: 
   build-and-push:

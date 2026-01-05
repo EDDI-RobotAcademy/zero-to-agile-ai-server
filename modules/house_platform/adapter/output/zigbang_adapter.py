@@ -78,6 +78,12 @@ class ZigbangAdapter:
                 errors.append(f"상세 조회/매핑 실패 {item_id}: {exc}")
         return converted, errors
 
+    def convert_detail_item(
+        self, raw_item: Mapping[str, Any]
+    ) -> HousePlatformUpsertBundle:
+        """직방 상세 응답을 업서트 번들로 변환한다."""
+        return self._map_raw_item_to_bundle(raw_item)
+
     def _normalize_item_ids(self, item_ids: Iterable[Any]) -> list[int]:
         normalized: list[int] = []
         for raw in item_ids:
@@ -169,6 +175,9 @@ class ZigbangAdapter:
             image_urls=self._normalize_images(item.get("images")),
             created_at=self._parse_datetime(item.get("approveDate")),
             updated_at=self._parse_datetime(item.get("updatedAt")),
+            registered_at=self._parse_datetime(item.get("approveDate")),
+            gu_nm=address_origin.get("local2"),
+            dong_nm=address_origin.get("local3"),
         )
 
         included = self._extract_manage_list(manage_cost, "includes", "include")
@@ -181,25 +190,28 @@ class ZigbangAdapter:
             )
 
         options_raw = item.get("options")
+        nearby_pois = self._extract_nearby_pois(item)
         options = None
         if isinstance(options_raw, list):
             built_in = self._extract_built_in(options_raw)
             near_flags = self._extract_near_flags(item)
-            if built_in or any(near_flags.values()):
+            if built_in or any(near_flags.values()) or nearby_pois:
                 options = HousePlatformOptionUpsertModel(
                     built_in=built_in or None,
                     near_univ=near_flags.get("near_univ"),
                     near_transport=near_flags.get("near_transport"),
                     near_mart=near_flags.get("near_mart"),
+                    nearby_pois=nearby_pois,
                 )
         else:
             near_flags = self._extract_near_flags(item)
-            if any(near_flags.values()):
+            if any(near_flags.values()) or nearby_pois:
                 options = HousePlatformOptionUpsertModel(
                     built_in=None,
                     near_univ=near_flags.get("near_univ"),
                     near_transport=near_flags.get("near_transport"),
                     near_mart=near_flags.get("near_mart"),
+                    nearby_pois=nearby_pois,
                 )
 
         return HousePlatformUpsertBundle(
@@ -393,6 +405,33 @@ class ZigbangAdapter:
             "near_transport": near_transport,
             "near_mart": near_mart,
         }
+
+    @staticmethod
+    def _extract_nearby_pois(
+        item: Mapping[str, Any],
+    ) -> list[dict[str, Any]] | None:
+        """exists=true POI만 추출하여 저장용 JSON으로 만든다."""
+        neighborhoods = item.get("neighborhoods", {}) or {}
+        nearby_pois = neighborhoods.get("nearbyPois", []) or []
+        results: list[dict[str, Any]] = []
+        for poi in nearby_pois:
+            if not isinstance(poi, Mapping):
+                continue
+            if not poi.get("exists"):
+                continue
+            poi_type = poi.get("poiType")
+            distance = poi.get("distance")
+            payload: dict[str, Any] = {}
+            if poi_type:
+                payload["poiType"] = poi_type
+            if distance is not None:
+                try:
+                    payload["distance"] = int(float(distance))
+                except (TypeError, ValueError):
+                    pass
+            if payload:
+                results.append(payload)
+        return results or None
 
     @staticmethod
     def _apply_image_params(url: str) -> str:

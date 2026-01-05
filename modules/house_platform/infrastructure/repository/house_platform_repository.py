@@ -4,9 +4,11 @@ import json
 from dataclasses import asdict
 from typing import Iterable, Sequence, Set
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from infrastructure.db.postgres import get_db_session
+from infrastructure.db.session_helper import open_session
 from modules.house_platform.application.dto.fetch_and_store_dto import (
     HousePlatformUpsertBundle,
 )
@@ -21,6 +23,9 @@ from modules.house_platform.application.dto.delete_house_platform_dto import (
 from modules.house_platform.application.port_out.house_platform_repository_port import (
     HousePlatformRepositoryPort,
 )
+from modules.house_platform.application.dto.monitor_house_platform_dto import (
+    HousePlatformMonitorTarget,
+)
 from modules.house_platform.infrastructure.orm.house_platform_management_orm import (
     HousePlatformManagementORM,
 )
@@ -34,11 +39,11 @@ class HousePlatformRepository(HousePlatformRepositoryPort):
     """house_platform 및 부속 테이블 저장소 구현체."""
 
     def __init__(self, session_factory=None):
-        self._session_factory = session_factory or get_db_session()
+        self._session_factory = session_factory or get_db_session
 
     def exists_rgst_nos(self, rgst_nos: Iterable[str]) -> Set[str]:
         """이미 저장된 rgst_no를 조회한다."""
-        session: Session = self._session_factory()
+        session, generator = open_session(self._session_factory)
         try:
             rows = (
                 session.query(HousePlatformORM.rgst_no)
@@ -47,11 +52,14 @@ class HousePlatformRepository(HousePlatformRepositoryPort):
             )
             return {row[0] for row in rows}
         finally:
-            session.close()
+            if generator:
+                generator.close()
+            else:
+                session.close()
 
     def upsert_batch(self, bundles: Sequence[HousePlatformUpsertBundle]) -> int:
         """매물/관리비/옵션을 묶어 업서트한다."""
-        session: Session = self._session_factory()
+        session, generator = open_session(self._session_factory)
         stored = 0
         try:
             for bundle in bundles:
@@ -92,11 +100,14 @@ class HousePlatformRepository(HousePlatformRepositoryPort):
             session.rollback()
             raise
         finally:
-            session.close()
+            if generator:
+                generator.close()
+            else:
+                session.close()
 
     def soft_delete_by_id(self, house_platform_id: int) -> DeleteHousePlatformResult:
         """is_banned 플래그를 True로 설정한다."""
-        session: Session = self._session_factory()
+        session, generator = open_session(self._session_factory)
         try:
             target = (
                 session.query(HousePlatformORM)
@@ -126,7 +137,91 @@ class HousePlatformRepository(HousePlatformRepositoryPort):
             session.rollback()
             raise
         finally:
-            session.close()
+            if generator:
+                generator.close()
+            else:
+                session.close()
+
+    def fetch_monitor_targets(
+        self, updated_before, limit: int | None = None
+    ) -> Sequence[HousePlatformMonitorTarget]:
+        """updated_at 기준 모니터링 대상 목록을 조회한다."""
+        session, generator = open_session(self._session_factory)
+        try:
+            query = (
+                session.query(
+                    HousePlatformORM.house_platform_id,
+                    HousePlatformORM.domain_id,
+                    HousePlatformORM.rgst_no,
+                    HousePlatformORM.updated_at,
+                    HousePlatformORM.is_banned,
+                )
+                .filter(
+                    or_(
+                        HousePlatformORM.updated_at <= updated_before,
+                        HousePlatformORM.updated_at.is_(None),
+                    )
+                )
+                .filter(HousePlatformORM.rgst_no.isnot(None))
+                .order_by(HousePlatformORM.updated_at.asc())
+            )
+            if limit:
+                query = query.limit(limit)
+            rows = query.all()
+            return [
+                HousePlatformMonitorTarget(
+                    house_platform_id=row[0],
+                    domain_id=row[1],
+                    rgst_no=row[2],
+                    updated_at=row[3],
+                    is_banned=row[4],
+                )
+                for row in rows
+            ]
+        finally:
+            if generator:
+                generator.close()
+            else:
+                session.close()
+
+    def fetch_bundle_by_id(
+        self, house_platform_id: int
+    ) -> HousePlatformUpsertBundle | None:
+        """기존 저장 데이터를 번들 형태로 조회한다."""
+        session, generator = open_session(self._session_factory)
+        try:
+            house = (
+                session.query(HousePlatformORM)
+                .filter(HousePlatformORM.house_platform_id == house_platform_id)
+                .one_or_none()
+            )
+            if not house:
+                return None
+            management = (
+                session.query(HousePlatformManagementORM)
+                .filter(
+                    HousePlatformManagementORM.house_platform_id
+                    == house_platform_id
+                )
+                .one_or_none()
+            )
+            options = (
+                session.query(HousePlatformOptionORM)
+                .filter(HousePlatformOptionORM.house_platform_id == house_platform_id)
+                .one_or_none()
+            )
+            return HousePlatformUpsertBundle(
+                house_platform=self._to_house_platform_model(house),
+                management=self._to_management_model(management)
+                if management
+                else None,
+                options=self._to_options_model(options) if options else None,
+            )
+        finally:
+            if generator:
+                generator.close()
+            else:
+                session.close()
 
     def _to_house_platform_payload(self, model: HousePlatformUpsertModel) -> dict:
         """DTO를 ORM 저장용 dict로 변환한다."""
@@ -142,6 +237,70 @@ class HousePlatformRepository(HousePlatformRepositoryPort):
                 data["image_urls"], ensure_ascii=False
             )
         return data
+
+    @staticmethod
+    def _to_house_platform_model(
+        model: HousePlatformORM,
+    ) -> HousePlatformUpsertModel:
+        """ORM 데이터를 업서트 모델로 변환한다."""
+        return HousePlatformUpsertModel(
+            house_platform_id=model.house_platform_id,
+            title=model.title,
+            address=model.address,
+            deposit=model.deposit,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+            registered_at=model.registered_at,
+            domain_id=model.domain_id,
+            rgst_no=model.rgst_no,
+            snapshot_id=model.snapshot_id,
+            pnu_cd=model.pnu_cd,
+            is_banned=model.is_banned,
+            sales_type=model.sales_type,
+            monthly_rent=model.monthly_rent,
+            room_type=model.room_type,
+            residence_type=model.residence_type,
+            contract_area=model.contract_area,
+            exclusive_area=model.exclusive_area,
+            floor_no=model.floor_no,
+            all_floors=model.all_floors,
+            lat_lng=model.lat_lng if model.lat_lng else None,
+            manage_cost=model.manage_cost,
+            can_park=model.can_park,
+            has_elevator=model.has_elevator,
+            image_urls=_parse_json_list(model.image_urls),
+            gu_nm=model.gu_nm,
+            dong_nm=model.dong_nm,
+        )
+
+    @staticmethod
+    def _to_management_model(
+        model: HousePlatformManagementORM,
+    ) -> HousePlatformManagementUpsertModel:
+        """관리비 ORM을 업서트 모델로 변환한다."""
+        return HousePlatformManagementUpsertModel(
+            house_platform_management_id=model.house_platform_management_id,
+            house_platform_id=model.house_platform_id,
+            management_included=model.management_included,
+            management_excluded=model.management_excluded,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+        )
+
+    @staticmethod
+    def _to_options_model(
+        model: HousePlatformOptionORM,
+    ) -> HousePlatformOptionUpsertModel:
+        """옵션 ORM을 업서트 모델로 변환한다."""
+        return HousePlatformOptionUpsertModel(
+            house_platform_options_id=model.house_platform_options_id,
+            house_platform_id=model.house_platform_id,
+            built_in=_parse_json_list(model.built_in),
+            near_univ=model.near_univ,
+            near_transport=model.near_transport,
+            near_mart=model.near_mart,
+            nearby_pois=model.nearby_pois if model.nearby_pois else None,
+        )
 
     @staticmethod
     def _drop_none(payload: dict) -> dict:
@@ -199,6 +358,7 @@ class HousePlatformRepository(HousePlatformRepositoryPort):
                 options.near_univ,
                 options.near_transport,
                 options.near_mart,
+                options.nearby_pois,
             )
         )
         if not has_payload:
@@ -211,6 +371,7 @@ class HousePlatformRepository(HousePlatformRepositoryPort):
             "near_univ": options.near_univ,
             "near_transport": options.near_transport,
             "near_mart": options.near_mart,
+            "nearby_pois": options.nearby_pois,
         }
 
         existing = (
@@ -230,3 +391,17 @@ class HousePlatformRepository(HousePlatformRepositoryPort):
                     **{k: v for k, v in payload.items() if v is not None},
                 )
             )
+
+
+def _parse_json_list(value: str | None) -> list[str] | None:
+    if not value:
+        return None
+    if isinstance(value, list):
+        return value
+    try:
+        parsed = json.loads(value)
+        if isinstance(parsed, list):
+            return [str(item) for item in parsed if item]
+    except Exception:
+        return None
+    return None

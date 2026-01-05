@@ -28,8 +28,10 @@ class HousePlatformORM(Base):
     updated_at = Column(
         DateTime, server_default=func.now(), onupdate=func.now(), nullable=True
     )
+    registered_at = Column(DateTime, nullable=True)
     domain_id = Column(Integer, server_default=text("1"), nullable=True)
     rgst_no = Column(String(50), nullable=True)
+    snapshot_id = Column(String(64), nullable=True)
     pnu_cd = Column(Text, nullable=True)
     is_banned = Column(Boolean, server_default=text("false"), nullable=True)
     sales_type = Column(String(20), nullable=True)
@@ -45,3 +47,5 @@ class HousePlatformORM(Base):
     can_park = Column(Boolean, nullable=True)
     has_elevator = Column(Boolean, nullable=True)
     image_urls = Column(Text, nullable=True)
+    gu_nm = Column(String(10), nullable=True)
+    dong_nm = Column(String(10), nullable=True)

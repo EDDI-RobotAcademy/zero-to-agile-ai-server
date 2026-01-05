@@ -1,4 +1,5 @@
 from sqlalchemy import BigInteger, Boolean, Column, Text
+from sqlalchemy.dialects.postgresql import JSONB
 
 from infrastructure.db.postgres import Base
 
@@ -16,3 +17,4 @@ class HousePlatformOptionORM(Base):
     near_univ = Column("near_univ", Boolean, nullable=True)
     near_transport = Column("near_transport", Boolean, nullable=True)
     near_mart = Column("near_mart", Boolean, nullable=True)
+    nearby_pois = Column("nearby_pois", JSONB, nullable=True)

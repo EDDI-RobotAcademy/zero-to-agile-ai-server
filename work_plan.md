@@ -94,11 +94,16 @@ plan.md requires:
 
 ## 📅 Enhanced Day-by-Day Plan (D-1 ~ D-7)
 
-### D-1 (Day 1): API Research & Setup ✅
+### D-1 (Day 1): API Research & Setup ✅ (Re-verified 2025-12-27)
 - [x] Obtain Public Data Portal API keys (국토교통부)
 - [x] Research Building Ledger API (건축물대장 API)
-  - Endpoint: `/getBrRecapTitleInfo`
+  - Service: `BldRgstHubService` (Updated from BldRgstService_v2)
+  - Endpoint: `/getBrTitleInfo` (Updated from `/getBrRecapTitleInfo`)
+  - Protocol: HTTPS (Updated from HTTP)
   - Required params: sigunguCd, bjdongCd, bun, ji
+  - Optional params: platGbCd (default: "0" for 대지)
+  - Response format: XML or JSON (use `_type=json` param)
+  - **Verification**: Real API test successful (resultCode: 00, NORMAL SERVICE)
 - [x] Research Real Transaction Price API (실거래가 API)
   - Endpoint: `/getRTMSDataSvcAptTradeDev`
   - Required params: LAWD_CD, DEAL_YMD
@@ -106,6 +111,8 @@ plan.md requires:
 - [x] Create `.env.example` with API key placeholders
 
 **Deliverable**: API key setup + spec documentation ✅
+**Re-verification Report**: [api_verification_report.md](api_verification_report.md)
+**Status**: All tests passing (13/13), Real API verified working
 
 ---
 
@@ -2623,3 +2630,89 @@ Benefits of This Refactoring
 - Easier to test: All dependencies are within the module
 - Future-proof: Can swap persistence implementation without affecting other modules
 
+
+
+
+-----------------------------
+
+Verification Plan: Address -> Risk Analysis (Real DB)
+Goal
+Verify the end-to-end flow using Real Database for address parsing and (attempted) Real API for building info. Target Address: 서울특별시 강남구 역삼동 601-3
+
+Prerequisites
+ Codebase: 
+AddressParserService
+, BjdongCodeRepository, BjdongCodeORM exist.
+ Database Data: Must contain the legal dong code for "서울특별시 강남구 역삼동".
+Sido: 서울특별시
+Sigungu: 강남구
+Dong: 역삼동
+Expected Code: 1168010100 (Approximate, to be verified)
+Step 1: Verify Database Content
+Create scripts/check_db_bjdong.py to:
+
+Connect to the DB using infrastructure.database (or equivalent).
+Query bjdong_cd_mgm for "역삼동".
+Report if the record exists and what the code is.
+Contingency: If data is missing, we must insert it or ask the user to populate the DB.
+Step 2: Verification Script (scripts/verify_risk_analysis_by_address.py)
+Setup:
+Create a real DB session.
+Initialize 
+AddressParserService
+ (Real DB).
+Initialize 
+BuildingLedgerClient
+ (Real API Key).
+Initialize 
+RiskAnalysisService
+.
+Execution:
+parser.parse_address_and_get_codes("서울특별시 강남구 역삼동 601-3")
+client.get_building_info(...)
+Convert response to BuildingInfo.
+service.analyze_property(...)
+Output:
+Print parsed codes.
+Print API response (or error).
+Print computed Risk Score.
+Note on API Key
+We expect the API to fail (500) or refuse connection (8081).
+
+If API fails: The script will catch the error, log "API Failed as Expected", and logically proceed with a Dummy BuildingInfo object to verify the RisAnalysisService downstream logic. This ensures we test as much as possible despite the bad key.
+
+---
+
+# 🧪 End-to-End Risk Analysis Verification
+
+**Status**: Plan created and ready for execution
+**Target Address**: 서울특별시 강남구 역삼동 601-3
+**Created**: 2025-12-27
+
+**See detailed verification plan**: [e2e_risk_verification_plan.md](e2e_risk_verification_plan.md)
+
+## Quick Summary
+
+Complete end-to-end verification of the risk analysis pipeline:
+
+1. **Database Verification** - Confirm bjdong code exists for 역삼동
+2. **Address Parsing** - Parse 601-3 and extract codes (11680-10100-0601-0003)
+3. **Building API Call** - Fetch building data from real API
+4. **Risk Analysis** - Calculate complete risk score from real data
+
+## Key Updates
+
+- ✅ **API Endpoint Corrected**: BldRgstHubService (not BldRgstService_v2)
+- ✅ **API Working**: Verified with real API call (HTTP 200, resultCode: 00)
+- ✅ **No Dummy Data**: All tests use real database and real API
+- ✅ **Fallback Plan**: Uses 614-1 if 601-3 doesn't exist
+
+## Execution Commands
+
+```bash
+# Run all verifications in sequence
+python scripts/check_db_bjdong_601_3.py
+python scripts/verify_address_parsing_601_3.py
+python scripts/verify_building_api_601_3.py
+python scripts/verify_risk_analysis_e2e_601_3.py
+```
