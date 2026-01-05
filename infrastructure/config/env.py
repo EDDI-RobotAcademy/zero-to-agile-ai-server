@@ -20,6 +20,9 @@ class Settings:
         self.PG_PASSWORD = os.getenv("POSTGRES_PASSWORD", "")
         self.PG_DATABASE = os.getenv("POSTGRES_DATABASE", "postgres")
 
+        # 공공 데이터 API 설정
+        self.PUBLIC_DATA_API_KEY = os.getenv("PUBLIC_DATA_API_KEY", "")
+
         # 크롤링/기타 설정
         self.zigbang_item_ids = self._parse_int_list(os.environ.get("ZIGBANG_ITEM_IDS", ""))
         self.crawl_interval_minutes = int(os.environ.get("CRAWL_INTERVAL_MINUTES", 30))

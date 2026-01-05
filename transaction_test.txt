@@ -1,0 +1,6 @@
+Starting Transaction Price API Test
+Testing Real Transaction Price API Connectivity...
+API Key: 82bf62c475...
+Endpoint: http://openapi.molit.go.kr:8081/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcAptTradeDev
+Params: {'serviceKey': '82bf62c475838f6057367b222a81a5e24989c1b995a314534b70f4f66e446c2f', 'LAWD_CD': '11440', 'DEAL_YMD': '202411', 'numOfRows': '10', 'pageNo': '1'}
+Request Exception: HTTPConnectionPool(host='openapi.molit.go.kr', port=8081): Max retries exceeded with url: /OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcAptTradeDev?serviceKey=82bf62c475838f6057367b222a81a5e24989c1b995a314534b70f4f66e446c2f&LAWD_CD=11440&DEAL_YMD=202411&numOfRows=10&pageNo=1 (Caused by NewConnectionError("HTTPConnection(host='openapi.molit.go.kr', port=8081): Failed to establish a new connection: [WinError 10061] 대상 컴퓨터에서 연결을 거부했으므로 연결하지 못했습니다"))

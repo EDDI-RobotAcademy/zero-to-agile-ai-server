@@ -273,944 +273,793 @@ class MinIOStorage(StoragePort): ...
 
 ---
 
-## 👥 팀 역할 및 책임
+---
 
-| 구분 | 역할명 | 담당자 | 핵심 책임 | 비고 |
-|------|--------|-----|-----------|------|
-| **Control Tower** | BE-1 (Team Lead) | 해인  | API Gateway, User Flow, ERD 총괄, **챗봇 API** ⭐ | 전체 흐름 조율 |
-| **Data & Risk** | BE-2 (Risk Eng) | 용준  | 공공데이터 수집, 리스크 분석 로직 | 신뢰성 담당 |
-| **Search** | BE-3 (RAG Core) | 장훈  | Vector DB, 검색 최적화, RAG 파이프라인 | 검색 품질 담당 |
-| **Process** | BE-4 (Async & Queue) | 승연  | RabbitMQ, 비동기 처리, 데이터 파이프라인 | 속도/안정성 담당 |
-| **AI Logic** | BE-5 (Prompt Eng) | 효진  | 페르소나 설계, 프롬프트 엔지니어링, **챗봇 프롬프트** ⭐ | UX 라이팅 담당 |
-| **DevOps** | BE-6 (Infra & CI/CD) | 재현  | Docker, 배포, 모니터링, **챗봇 UI** ⭐ | 운영/배포 담당 |
+# House Analysis Module - TDD 기반 실행 계획
 
+## 🎯 프로젝트 목적
+
+주소를 입력하면 건물 리스크와 가격 적정성을 분석하고, 결과를 DB에 자동 저장하는 내부 분석 모듈을 구축한다.
+
+- 외부 공개용 ❌
+- 내부 서비스/추천 로직에서 재사용 ✅
+- Hexagonal Architecture + 팀 공통 구조 준수 ✅
+- DB는 기존 인프라 그대로 사용 ✅
 
 ---
 
-### 🚨 팀원별 주의사항
+## 📋 참고사항
 
-#### BE-1 (다영) - API Gateway
-- ✅ Router에서 Service 직접 생성
-- ✅ 복잡한 DI 컨테이너 만들지 말 것
-- ✅ 설정은 `get_settings()`로
+### 현재 프로젝트 상태 (2025-12-30 기준)
 
-#### BE-2 (용준) - Risk Eng
-- ✅ `RiskService` 직접 구현
-- ✅ 공공 API 클라이언트는 util로 분리
-- ✅ Port/Adapter 불필요
+**기존 모듈 (7개)**:
+- `auth`: Google OAuth2 인증
+- `abang_user`: 사용자 관리
+- `finder_request`: 매물 요청 관리 (가장 완성도 높음)
+- `house_platform`: 집방 데이터 통합
+- `student_house`: 학생 주거 추천 (임베딩 검색, 의미 분석)
+- `chatbot`: AI 기반 추천 및 설명
+- `mq`: 메시지 큐 처리 (RabbitMQ)
 
-#### BE-3 (장훈) - RAG Core
-- ✅ `RAGService` 직접 구현
-- ✅ pgvector 직접 사용
-- ✅ Repository 패턴만 사용
+**인프라 구성**:
+- DB: PostgreSQL + SQLAlchemy + psycopg2
+- Session 관리: `infrastructure/db/postgres.py`의 `get_db_session()` (FastAPI Depends 호환)
+- ORM Base: `infrastructure/orm/`에 중앙 집중식 ORM 모델
+- 설정: `infrastructure/config/env.py`의 `Settings` 클래스
+- 외부 서비스: OpenAI 임베딩 (`infrastructure/external/embedding_agent.py`)
 
-#### BE-4 (승연) - Async & Queue
-- ✅ RabbitMQ Producer/Consumer 직접 구현
-- ✅ Worker는 Service를 직접 호출
-- ✅ 복잡한 추상화 불필요
+**main.py 현재 라우터**:
+- auth_router
+- search_house_router
+- finder_request_router
+- chatbot_router
+- student_house_router
 
-#### BE-5 (효진) - Prompt Eng
-- ✅ `LLMService` 직접 구현
-- ✅ 프롬프트는 템플릿 파일로 관리
-- ✅ OpenAI SDK 직접 사용
-
-#### BE-6 (재현) - DevOps
-- ✅ Docker Compose로 간단하게
-- ✅ CI/CD는 GitHub Actions 템플릿 사용
-- ✅ 과도한 오케스트레이션 불필요
-
----
-
-### 💡 핵심 메시지
-
-> **"4주 안에 완성하려면, 간단하게 만들어야 합니다."**
-
-- 추상화는 필요할 때만
-- Service는 Router에서 직접 생성
-- 설정은 config에서 읽기
-- 불필요한 계층 제거
-
-**목표:** 코드는 단순하게, 기능은 완벽하게 ✨
+**삭제된 모듈**:
+- `risk_analysis`: 리스크 분석 (20+ 파일 삭제됨)
+- `risk_analysis_mock`: Mock 구현 (8+ 파일 삭제됨)
+→ 본 계획은 이들을 TDD 방식으로 재구축하는 것
 
 ---
 
-## 🗓️ 주차별 마일스톤
+## 🏗️ 구현 대상 기능 (확정)
+✅ ① get_risk_score(address)
 
-### 1주차: 설계 및 뼈대 구축 (D-0 ~ D-7)
-**목표:** "프로젝트 구조 확정 및 기술 검증"
+기능
 
-#### 전체 공통 목표
-- [ ] **D-1**: 킥오프 미팅 (역할 확인, Git Repository 세팅)
-- [ ] **D-2**: ERD 최종 확정 및 공유
-- [ ] **D-7**: 1주차 회고 미팅 (각자 진척도 공유)
+주소 → 법정동/번지 코드 변환
 
----
+건축물대장 API 조회
 
-#### BE-1 (Team Lead - 해인)
-**핵심 목표:** ERD 확정, API 스펙 정의, 기본 인증 구현
+아래 요소로 Risk 점수 산출
 
-**세부 태스크:**
-- [ ] ERD 설계 및 팀원 피드백 반영 (D-1 ~ D-2)
-- [ ] PostgreSQL 초기 스키마 생성 (D-3)
-- [ ] 회원 가입/로그인 API 구현 (Google OAuth, JWT) (D-3 ~ D-5)
-- [ ] 임차인 프로필 생성 API (D-5 ~ D-7)
-- [ ] Swagger API 문서 자동화 설정 (D-7)
+위반 건축물 여부
 
-**산출물:**
-- `schema.sql` (초기 DB 스키마)
-- `/api/auth/*` 엔드포인트
-- `/api/tenants/*` 엔드포인트
-- Swagger UI 접근 가능
+내진 설계 여부
 
-**협업 포인트:**
-- BE-6와 협업: Docker DB 환경 세팅
-- 전체 팀과 ERD 리뷰 세션 진행
+건축물 노후도
 
----
+결과 DB 저장
 
-#### BE-2 (Risk Eng - 용준)
-**핵심 목표:** 공공 API 연동 및 리스크 데이터 확보
+점수 + 요약 코멘트 반환
 
-**세부 태스크:**
-- [ ] 국토부 건축물대장 API 연동 테스트 (D-1 ~ D-3)
-- [ ] 실거래가 API 연동 테스트 (D-1 ~ D-3)
-- [ ] 수집 데이터 파싱 로직 구현 (D-4 ~ D-6)
-- [ ] 리스크 평가 Rule 설계 (위반 건축물, 내진설계, 사용승인일 등) (D-5 ~ D-7)
-- [ ] 샘플 데이터 50개 수집 및 DB 저장 (D-7)
+출력 예
 
-**산출물:**
-- `risk_evaluator.py` (리스크 평가 모듈)
-- 샘플 매물 데이터 50개 (CSV or JSON)
-- 공공 API 연동 문서
-
-**협업 포인트:**
-- BE-3와 협업: 수집 데이터를 Vector DB에 전달
-- BE-5와 협업: 리스크 Score를 LLM Prompt에 전달할 형식 논의
-
----
-
-#### BE-3 (RAG Core - 장훈)
-**핵심 목표:** pgvector 설정 및 검색 테스트
-
-**세부 태스크:**
-- [ ] pgvector 확장 설치 및 테스트 (D-1 ~ D-2)
-- [ ] OpenAI 임베딩 API 연동 테스트 (D-2 ~ D-3)
-- [ ] 매물 데이터 임베딩 파이프라인 구축 (D-4 ~ D-6)
-- [ ] 하이브리드 검색 로직 설계 (키워드 필터 + 벡터 유사도) (D-5 ~ D-7)
-- [ ] 테스트 데이터셋으로 검색 정확도 확인 (D-7)
-
-**산출물:**
-- `embedding_pipeline.py` (임베딩 생성 모듈)
-- `search_engine.py` (하이브리드 검색 모듈)
-- 검색 성능 테스트 결과 (Precision, Recall)
-
-**협업 포인트:**
-- BE-2와 협업: 매물 데이터 수신
-- BE-5와 협업: 검색 결과를 LLM에 전달할 포맷 논의
-
----
-
-#### BE-4 (Async & Queue - 승연)
-**핵심 목표:** 개발 환경 구축 및 RabbitMQ 세팅
-
-**세부 태스크:**
-- [ ] Docker Compose 파일 작성 (PostgreSQL, RabbitMQ, Redis) (D-1 ~ D-2)
-- [ ] RabbitMQ 기본 설정 및 테스트 (D-3 ~ D-4)
-- [ ] Producer/Consumer 예제 코드 작성 (D-5 ~ D-6)
-- [ ] 비동기 Task Queue 구조 설계 (D-6 ~ D-7)
-- [ ] 팀원들에게 개발 환경 세팅 가이드 제공 (D-7)
-
-**산출물:**
-- `docker-compose.yml`
-- `queue_producer.py`, `queue_consumer.py`
-- 개발 환경 세팅 가이드 (README.md)
-
-**협업 포인트:**
-- BE-1과 협업: DB 스키마 공유
-- BE-6과 협업: CI/CD 파이프라인 기초 논의
-
----
-
-#### BE-5 (Prompt Eng - 효진)
-**핵심 목표:** 페르소나 설계 및 프롬프트 프로토타입 작성
-
-**세부 태스크:**
-- [ ] "학교 선배" 페르소나 정의 (톤앤매너, 말투) (D-1 ~ D-2)
-- [ ] 시나리오별 프롬프트 템플릿 작성 (D-3 ~ D-5)
-  - 매물 추천 이유 설명
-  - 리스크 경고 문구
-  - 계약 전 주의사항
-- [ ] OpenAI API 연동 및 프롬프트 테스트 (D-5 ~ D-7)
-- [ ] 프롬프트 버전 관리 시스템 설계 (D-7)
-
-**산출물:**
-- `prompts/` 디렉토리 (템플릿 파일들)
-- `llm_service.py` (LLM 호출 모듈)
-- 페르소나 가이드 문서
-
-**협업 포인트:**
-- BE-2와 협업: 리스크 Score를 자연어로 변환하는 프롬프트
-- BE-3와 협업: 검색 결과를 설명하는 프롬프트
-- **BE-1과 협업: 챗봇용 프롬프트 설계 및 제공** ⭐ 신규
-
----
-
-#### BE-6 (Infra & CI/CD - 재현)
-**핵심 목표:** 배포 환경 구축 및 CI/CD 기초 세팅
-
-**세부 태스크:**
-- [ ] Git Repository 구조 설계 (D-1)
-- [ ] Docker 기반 개발 환경 구축 지원 (D-2 ~ D-3)
-- [ ] GitHub Actions 기초 CI 설정 (Lint, Test) (D-4 ~ D-6)
-- [ ] 로깅 시스템 설정 (Python logging 설정) (D-6 ~ D-7)
-- [ ] 개발 서버 배포 환경 준비 (D-7)
-
-**산출물:**
-- `.github/workflows/ci.yml`
-- `docker/` 디렉토리 (Dockerfiles)
-- 배포 가이드 문서
-
-**협업 포인트:**
-- BE-4와 협업: Docker Compose 리뷰
-- 전체 팀: Git 브랜치 전략 공유
-
----
-
-### 1주차 체크포인트 (D-7)
-**전체 팀 회고 미팅 필수**
-
-확인 사항:
-- [ ] ERD가 확정되고 모두가 이해했는가?
-- [ ] 각자의 개발 환경이 정상 동작하는가?
-- [ ] 공공 데이터 API가 정상 연동되었는가?
-- [ ] 테스트 데이터셋이 준비되었는가?
-
----
-
-## 2주차: 핵심 기능 구현 & 중간 발표 준비 (D-8 ~ D-14)
-**목표:** "가상 데이터라도 흐름(Flow)이 완벽하게 돌아가는 MVP"
-
-### 전체 공통 목표
-- [ ] **D-10**: 중간 발표 준비 (PPT, 데모 시나리오)
-- [ ] **D-12**: 중간 발표 리허설
-- [ ] **D-14**: 중간 발표 및 피드백 수렴, 2주차 회고
-
----
-
-#### BE-1 (Team Lead - 다영)
-**핵심 목표:** 전체 API 파이프라인 연결 + 매물별 챗봇 API 구현
-
-**세부 태스크:**
-- [ ] 임차인 요구사항 입력 API 구현 (D-8 ~ D-9)
-- [ ] 추천 요청 API 구현 (비동기 Task 생성) (D-10 ~ D-11)
-- [ ] Task 상태 조회 API 구현 (D-11 ~ D-12)
-- [ ] 추천 결과 조회 API 구현 (D-12 ~ D-13)
-- [ ] **챗봇 API 구현** (D-12 ~ D-14) ⭐ 신규
-  - 매물별 챗봇 대화 API
-  - 사용자 질문 → LLM 응답 파이프라인
-  - 대화 히스토리 관리 (선택)
-- [ ] 팀원 코드 리뷰 및 API 통합 테스트 (D-13 ~ D-14)
-
-**산출물:**
-- `/api/requests/*` 엔드포인트
-- `/api/recommendations/*` 엔드포인트
-- `/api/chatbot/*` 엔드포인트 ⭐ 신규
-- 통합 테스트 케이스
-
-**중간 발표 기여:**
-- API Flow 시연 (Postman or Swagger)
-- **챗봇 기능 시연** ⭐
-
----
-
-#### BE-2 (Risk Eng - 용준)
-**핵심 목표:** 리스크 분석 로직 실제 구현
-
-**세부 태스크:**
-- [ ] 건축물대장 위반 여부 체크 로직 (D-8 ~ D-9)
-- [ ] 실거래가 대비 가격 이탈 분석 (D-10 ~ D-11)
-- [ ] 내진설계, 사용승인일 체크 로직 (D-11 ~ D-12)
-- [ ] 리스크 Score 계산 알고리즘 구현 (D-12 ~ D-13)
-- [ ] 샘플 매물 100개로 테스트 (D-13 ~ D-14)
-
-**산출물:**
-- `risk_analysis/` 모듈
-- 리스크 평가 결과 JSON 샘플
-- 100개 매물 리스크 분석 결과
-
-**중간 발표 기여:**
-- 리스크 분석 로직 설명 (Before/After 예시)
-
----
-
-#### BE-3 (RAG Core - 장훈)
-**핵심 목표:** RAG 검색 파이프라인 완성
-
-**세부 태스크:**
-- [ ] 임차인 요구사항 → 쿼리 벡터 생성 (D-8 ~ D-9)
-- [ ] 하드 필터링 (지역, 가격) + 벡터 검색 조합 (D-10 ~ D-11)
-- [ ] Top-K 매물 추출 로직 구현 (D-11 ~ D-12)
-- [ ] 검색 결과에 근거 데이터 추가 (왜 이 집이 맞는지) (D-12 ~ D-13)
-- [ ] 검색 성능 최적화 (응답 시간 < 2초) (D-13 ~ D-14)
-
-**산출물:**
-- `rag_pipeline.py` (완성본)
-- 검색 결과 샘플 (JSON)
-- 성능 테스트 결과
-
-**중간 발표 기여:**
-- 검색 정확도 시연 (쿼리 → 추천 결과)
-
----
-
-#### BE-4 (Async & Queue - 승연)
-**핵심 목표:** 비동기 처리 파이프라인 구현
-
-**세부 태스크:**
-- [ ] 추천 요청을 RabbitMQ에 전송하는 Producer 구현 (D-8 ~ D-9)
-- [ ] RAG + Risk + LLM을 실행하는 Consumer Worker 구현 (D-10 ~ D-12)
-- [ ] Task 상태 관리 (pending/processing/completed/failed) (D-12 ~ D-13)
-- [ ] 에러 핸들링 및 Retry 로직 (D-13 ~ D-14)
-- [ ] 전체 파이프라인 통합 테스트 (D-14)
-
-**산출물:**
-- `async_worker.py` (Worker 완성본)
-- Task Queue 모니터링 대시보드 (선택)
-
-**중간 발표 기여:**
-- 비동기 처리 흐름도 설명
-
----
-
-#### BE-5 (Prompt Eng - 효진)
-**핵심 목표:** 프롬프트 실전 적용 및 답변 생성
-
-**세부 태스크:**
-- [ ] BE-2(리스크) + BE-3(검색) 데이터를 받아 LLM 입력 생성 (D-8 ~ D-9)
-- [ ] 추천 이유 설명 프롬프트 최적화 (D-10 ~ D-11)
-- [ ] 리스크 경고 문구 자동 생성 (D-11 ~ D-12)
-- [ ] **챗봇용 Q&A 프롬프트 설계** (D-12 ~ D-13) ⭐ 신규
-  - 매물 정보 기반 질문 답변 프롬프트
-  - "학교 선배" 페르소나 적용
-  - 빠른 응답용 템플릿 (근처 편의점, 리스크 등)
-- [ ] "학교 선배" 톤앤매너 적용 (D-12 ~ D-13)
-- [ ] 다양한 시나리오 테스트 (최소 20개 케이스) (D-13 ~ D-14)
-
-**산출물:**
-- `prompt_templates/` (v1.0)
-- `prompt_templates/chatbot/` ⭐ 신규
-- LLM 응답 샘플 20개
-- 챗봇 Q&A 샘플 10개 ⭐ 신규
-- 프롬프트 성능 평가 보고서
-
-**중간 발표 기여:**
-- AI 답변 품질 시연 (실제 응답 예시)
-- **챗봇 대화 시연** ⭐ 신규
-
----
-
-#### BE-6 (Infra & CI/CD - 재현)
-**핵심 목표:** 중간 발표용 데모 환경 안정화
-
-**세부 태스크:**
-- [ ] 개발 서버 배포 자동화 (D-8 ~ D-10)
-- [ ] 로그 수집 및 모니터링 설정 (D-10 ~ D-11)
-- [ ] 중간 발표용 데모 환경 세팅 (D-11 ~ D-12)
-- [ ] 팀원들 코드 통합 지원 (D-12 ~ D-13)
-- [ ] 발표 PPT 기술 파트 작성 지원 (D-13 ~ D-14)
-
-**산출물:**
-- 배포된 개발 서버 URL
-- 모니터링 대시보드
-- 중간 발표 PPT (기술 파트)
-
-**중간 발표 기여:**
-- 시스템 아키텍처 설명
-
----
-
-### 2주차 체크포인트 (D-14 - 중간 발표)
-**중간 발표 핵심 메시지:**
-> "가상 데이터지만, 실제 작동하는 Flow를 보여주세요!"
-
-**시연 시나리오:**
-1. 임차인이 요구사항 입력 (예: "마포구, 전세 5000만원, 방 2개")
-2. 시스템이 매물 검색 + 리스크 분석 (Loading...)
-3. AI가 추천 이유 + 리스크 경고 설명
-4. 결과 화면 출력 (Top 3 매물)
-5. **매물 상세 → 챗봇 대화 시연** ⭐ 신규
-   - "근처에 편의점 있어?"
-   - "전세사기 위험은 없어?"
-
-**발표 후 피드백 수렴:**
-- 어떤 부분이 부족한가?
-- 3~4주차에 집중할 부분은?
-- **챗봇 응답 품질은 어떤가?** ⭐
-
----
-
-## 💬 챗봇 기능 상세 스펙
-
-### 챗봇 아키텍처 (BE-1 다영 담당)
-
-**API 엔드포인트:**
-```
-POST /api/chatbot/{property_id}/message
-- Request: { "message": "근처에 편의점 있어?" }
-- Response: { 
-    "reply": "네! 도보 2분 거리에 CU가 있어요.",
-    "quick_replies": ["주차 가능해?", "학교 거리는?"]
-  }
-
-GET /api/chatbot/{property_id}/history (선택)
-- Response: { "messages": [...] }
-```
-
-**처리 흐름:**
-1. 프론트엔드에서 사용자 메시지 전송
-2. BE-1이 메시지 수신 + 매물 정보 조회
-3. BE-5의 챗봇 프롬프트로 LLM 호출
-4. LLM 응답을 프론트엔드로 반환
-
-**프롬프트 설계 (BE-5 효진 담당):**
-```
-시스템: 너는 대학생의 첫 자취를 돕는 친절한 선배야.
-        매물 정보를 기반으로 질문에 답변해줘.
-
-매물 정보:
-- 주소: 마포구 신정동 123-45
-- 가격: 전세 7000만원
-- 근처 편의시설: CU (도보 2분), 이마트24 (도보 5분)
-- 리스크: 건축물대장 위반 없음, 실거래가 대비 적정
-
-사용자: 근처에 편의점 있어?
-AI: 네! 도보 2분 거리에 CU가 있고, 5분 거리에 이마트24도 있어.
-```
-
-**빠른 질문 템플릿:**
-- "근처 편의점 있어?"
-- "전세사기 위험은 없어?"
-- "학교까지 얼마나 걸려?"
-- "주차 가능해?"
-- "관리비는 얼마야?"
-
-### 프론트엔드 챗봇 컴포넌트 (재현 담당)
-
-**ChatbotModal.tsx:**
-```typescript
-interface ChatbotModalProps {
-  isOpen: boolean
-  propertyId: string
-  onClose: () => void
+{
+  "risk_score": 72,
+  "summary": "내진 설계 미적용, 준공 30년 이상으로 위험도 높음"
 }
 
-const ChatbotModal: React.FC<ChatbotModalProps> = ({ 
-  isOpen, 
-  propertyId, 
-  onClose 
-}) => {
-  const [messages, setMessages] = useState([])
-  const [inputValue, setInputValue] = useState('')
-  const [loading, setLoading] = useState(false)
+✅ ② get_price_reasonable(address, type)
 
-  const sendMessage = async (text: string) => {
-    setLoading(true)
-    const response = await chatbotAPI.sendMessage(propertyId, text)
-    setMessages([...messages, 
-      { role: 'user', text },
-      { role: 'ai', text: response.reply }
-    ])
-    setLoading(false)
-  }
+기능
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <ChatHeader>💬 AI 선배에게 물어보기</ChatHeader>
-      <ChatMessages>
-        {messages.map((msg, idx) => (
-          <ChatBubble key={idx} role={msg.role}>
-            {msg.text}
-          </ChatBubble>
-        ))}
-        {loading && <TypingIndicator />}
-      </ChatMessages>
-      <QuickReplies>
-        <QuickButton onClick={() => sendMessage('근처 편의점?')}>
-          근처 편의점?
-        </QuickButton>
-        <QuickButton onClick={() => sendMessage('리스크는?')}>
-          리스크는?
-        </QuickButton>
-      </QuickReplies>
-      <ChatInput
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        onEnter={() => sendMessage(inputValue)}
-      />
-    </Modal>
-  )
+주소 → 법정동 코드 변환
+
+실거래가 API 조회
+
+3㎡당 거래가 계산
+
+동일 지역 평균과 비교
+
+가격 적정성 점수 산출
+
+결과 DB 저장
+
+출력 예
+
+{
+  "price_score": 38,
+  "comment": "동 평균 대비 약 22% 높은 가격"
 }
+
+3. 팀 프로젝트 기준 최종 디렉토리 구조
+
+📁 팀 구조에 100% 맞춘 최종안
+
+modules/
+  house_analysis/
+    ├── adapter/
+    │   ├── input/
+    │   │   └── web/
+    │   │       ├── request/
+    │   │       ├── response/
+    │   │       └── router/
+    │   │           └── house_analysis_router.py
+    │   │
+    │   └── output/
+    │       └── repository/
+    │           ├── address_codec_repository.py
+    │           ├── public_api_repository.py
+    │           ├── risk_history_repository.py
+    │           └── price_history_repository.py
+    │
+    ├── application/
+    │   ├── dto/
+    │   │   ├── risk_dto.py
+    │   │   └── price_dto.py
+    │   │
+    │   ├── port/
+    │   │   ├── address_codec_port.py
+    │   │   ├── public_api_port.py
+    │   │   ├── risk_history_port.py
+    │   │   └── price_history_port.py
+    │   │
+    │   └── usecase/
+    │       ├── get_risk_score_usecase.py
+    │       └── get_price_reasonable_usecase.py
+    │
+    └── domain/
+        ├── model.py
+        ├── services.py
+        └── exceptions.py
+
+4. 아키텍처 흐름 (실제 실행 흐름)
+[API 요청]
+   ↓
+[Router]
+   ↓
+[UseCase]
+   ├─ AddressCodecPort
+   ├─ PublicApiPort
+   ├─ Domain Service (점수 계산)
+   └─ Repository.save()  ← DB 저장
+   ↓
+[Response 반환]
+
+
+✔ DB 세션은 get_db_session()을 그대로 사용
+✔ commit / rollback 은 UseCase에서 제어
+✔ Repository는 insert만 담당
+✔ Domain은 순수 계산 로직만 포함
+
+5. DB 처리 방식 (중요)
+✔ 사용 방식
+
+DB 설정 ❌ (이미 있음)
+
+Session 생성 ❌
+
+ORM 모델 정의 → infrastructure/orm 사용
+
+get_db_session()을 FastAPI Depends로 주입
+
+✔ 저장 시점
+
+UseCase 내부에서
+
+repo.save(...)
+db.commit()
+
+✔ 저장 대상
+테이블	내용
+risk_score_history	주소, risk_score, 요약, factors
+price_score_history	주소, 거래유형, 점수, metrics
+6. main.py 연동 방식 (확정)
+from modules.house_analysis.adapter.input.web.router.house_analysis_router import router as house_analysis_router
+
+api_router.include_router(house_analysis_router)
+
+
+API 호출 예:
+
+GET /api/house_analysis/risk?address=서울시 강남구 역삼동 777
+GET /api/house_analysis/price?address=...&deal_type=전세
+
+7. 개발 순서 (실제 작업 기준)
+🟩 Phase 1 – 구조 구성 (0.5일)
+
+모듈 디렉토리 생성
+
+router / usecase / port / repository 뼈대
+
+🟩 Phase 2 – Port & UseCase 정의 (0.5일)
+
+Risk / Price UseCase
+
+Repository Port 정의
+
+🟩 Phase 3 – 주소 & API 연동 (1~2일)
+
+주소 → 법정동 변환
+
+건축물대장 / 실거래가 API 연동
+
+🟩 Phase 4 – 점수화 로직 (1~2일)
+
+Risk 규칙
+
+Price 평균 계산
+
+🟩 Phase 5 – DB 저장 연결 (0.5일)
+
+Repository 구현
+
+commit / rollback 처리
+
+🟩 Phase 6 – 테스트 & 정리 (1일)
+
+UseCase 단위 테스트
+
+API 호출 확인
+
+8. 이 설계의 장점 (팀 관점)
+
+✅ 기존 프로젝트 구조 100% 준수
+✅ 추후 AI 추천 / 점수 고도화 가능
+✅ 도메인 분리 완벽
+✅ DB 의존성 최소화
+✅ 테스트/확장 용이
+✅ 팀원별 분업 쉬움
+
+9. 최종 요약 (한 줄)
+
+"주소 기반 위험도·가격 분석을 수행하고 결과를 자동 저장하는 House Analysis 모듈을, 팀 표준 아키텍처에 맞게 구현한다."
+
+---
+
+## 📐 아키텍처 설계
+
+### 최종 디렉토리 구조
+
+```
+modules/house_analysis/
+├── adapter/
+│   ├── input/
+│   │   └── web/
+│   │       ├── request/
+│   │       │   ├── __init__.py
+│   │       │   ├── risk_request.py          # GET query params용 모델
+│   │       │   └── price_request.py
+│   │       ├── response/
+│   │       │   ├── __init__.py
+│   │       │   ├── risk_response.py         # API 응답 DTO
+│   │       │   └── price_response.py
+│   │       └── router/
+│   │           ├── __init__.py
+│   │           └── house_analysis_router.py # FastAPI 엔드포인트
+│   │
+│   └── output/
+│       └── repository/
+│           ├── __init__.py
+│           ├── address_codec_repository.py   # 주소 → 법정동코드 변환
+│           ├── building_ledger_repository.py # 건축물대장 API
+│           ├── transaction_price_repository.py # 실거래가 API
+│           ├── risk_history_repository.py    # 리스크 분석 결과 저장
+│           └── price_history_repository.py   # 가격 분석 결과 저장
+│
+├── application/
+│   ├── dto/
+│   │   ├── __init__.py
+│   │   ├── risk_dto.py                      # 유스케이스 내부용 DTO
+│   │   └── price_dto.py
+│   │
+│   ├── port/
+│   │   ├── __init__.py
+│   │   ├── address_codec_port.py            # 추상 인터페이스
+│   │   ├── building_ledger_port.py
+│   │   ├── transaction_price_port.py
+│   │   ├── risk_history_port.py
+│   │   └── price_history_port.py
+│   │
+│   └── usecase/
+│       ├── __init__.py
+│       ├── analyze_risk_usecase.py          # 리스크 분석 유스케이스
+│       └── analyze_price_usecase.py         # 가격 분석 유스케이스
+│
+└── domain/
+    ├── __init__.py
+    ├── model.py                             # RiskScore, PriceScore 도메인 모델
+    ├── service.py                           # 순수 계산 로직
+    └── exception.py                         # 도메인 예외
+
+infrastructure/orm/
+├── __init__.py
+├── risk_score_history_orm.py                # 리스크 분석 결과 테이블
+└── price_score_history_orm.py               # 가격 분석 결과 테이블
+
+test/house_analysis/
+├── __init__.py
+├── domain/
+│   ├── __init__.py
+│   └── test_risk_service.py                 # 도메인 서비스 단위 테스트
+├── application/
+│   ├── __init__.py
+│   └── test_analyze_risk_usecase.py         # 유스케이스 단위 테스트 (mock)
+└── adapter/
+    ├── __init__.py
+    └── test_house_analysis_router.py        # API 통합 테스트
 ```
 
-**UI 요구사항:**
-- 모달 형태 (또는 우측 하단 팝업)
-- 대화 말풍선 (사용자: 우측, AI: 좌측)
-- Typing 애니메이션 (AI 응답 대기 중)
-- 빠른 질문 버튼 (Quick Replies)
-- 스크롤 자동 하단 이동
-- 모바일 반응형
+### 의존성 흐름
+
+```
+[FastAPI Router]
+    ↓ (Request DTO)
+[UseCase]
+    ├─→ [AddressCodecPort] → [AddressCodecRepository] → [외부 API/DB]
+    ├─→ [BuildingLedgerPort] → [BuildingLedgerRepository] → [공공 API]
+    ├─→ [TransactionPricePort] → [TransactionPriceRepository] → [공공 API]
+    ├─→ [Domain Service] (순수 계산 로직)
+    └─→ [HistoryPort] → [HistoryRepository] → [PostgreSQL]
+    ↓ (Response DTO)
+[FastAPI Response]
+```
+
+**핵심 원칙**:
+- Router는 UseCase를 직접 생성 (DI 컨테이너 없음)
+- UseCase는 Port를 통해 Repository와 통신
+- Domain은 외부 의존성 제로 (순수 계산 로직)
+- DB 세션은 `get_db_session()` Depends로 주입
 
 ---
 
-## 3주차: 고도화 및 최적화 (D-15 ~ D-21)
-**목표:** "실제 데이터 연동 및 성능 개선"
+## 🧪 테스트 전략
 
-### 전체 공통 목표
-- [ ] **D-21**: 3주차 회고 미팅 (최종 발표 준비 상태 점검)
+### 테스트 레벨
 
----
+1. **Domain 단위 테스트** (가장 먼저)
+   - 순수 계산 로직 테스트
+   - Mock 불필요 (외부 의존성 없음)
+   - 예: `test_calculate_risk_score()`
 
-#### BE-1 (Team Lead - 다영)
-**핵심 목표:** 임대인 기능 추가, 챗봇 고도화, 전체 API 안정화
+2. **UseCase 단위 테스트**
+   - Port를 Mock으로 대체
+   - 비즈니스 흐름 검증
+   - 예: `test_analyze_risk_with_mocked_repositories()`
 
-**세부 태스크:**
-- [ ] 임대인 매물 등록 API 구현 (D-15 ~ D-17)
-- [ ] **챗봇 기능 고도화** (D-15 ~ D-17) ⭐
-  - 대화 히스토리 저장 (선택)
-  - 빠른 질문 답변 최적화
-  - 응답 속도 개선 (<2초)
-- [ ] 임차인-임대인 매칭 로직 (선택) (D-17 ~ D-19)
-- [ ] API 에러 핸들링 강화 (D-19 ~ D-20)
-- [ ] 전체 API 통합 테스트 (D-20 ~ D-21)
-- [ ] API 문서 최종 업데이트 (D-21)
+3. **Repository 통합 테스트** (선택적)
+   - 실제 외부 API 호출 (Rate Limit 주의)
+   - 또는 VCR/httpretty로 녹화/재생
 
-**산출물:**
-- `/api/properties/*` 엔드포인트 (임대인)
-- `/api/chatbot/*` 고도화 버전 ⭐
-- 통합 테스트 케이스 (100% 커버리지 목표)
+4. **API 통합 테스트**
+   - TestClient로 엔드포인트 호출
+   - 전체 흐름 검증
+   - DB는 in-memory SQLite 또는 테스트 DB 사용
 
----
+### 테스트 실행 명령어
 
-#### BE-2 (Risk Eng - 용준)
-**핵심 목표:** 실제 데이터 기반 리스크 분석 고도화
+```bash
+# 전체 테스트
+pytest test/house_analysis/
 
-**세부 태스크:**
-- [ ] 융자금 정보 추가 (가능한 경우) (D-15 ~ D-16)
-- [ ] 시세 비교 로직 정교화 (D-16 ~ D-18)
-- [ ] 리스크 설명 문구 개선 (BE-5와 협업) (D-18 ~ D-19)
-- [ ] 실제 매물 100개 리스크 재분석 (D-19 ~ D-20)
-- [ ] 리스크 분석 정확도 검증 (D-20 ~ D-21)
+# 도메인만
+pytest test/house_analysis/domain/
 
-**산출물:**
-- 고도화된 리스크 분석 로직
-- 100개 매물 최종 리스크 리포트
+# 특정 테스트
+pytest test/house_analysis/domain/test_risk_service.py::test_calculate_risk_score -v
+```
 
 ---
 
-#### BE-3 (RAG Core - 장훈)
-**핵심 목표:** 검색 품질 및 설명 근거 강화
+## 📊 Epic별 실행 계획 (TDD 기반)
 
-**세부 태스크:**
-- [ ] 검색 결과에 "왜 추천하는지" 근거 데이터 보강 (D-15 ~ D-17)
-- [ ] 하이브리드 검색 가중치 튜닝 (D-17 ~ D-19)
-- [ ] 검색 속도 최적화 (인덱싱 개선) (D-19 ~ D-20)
-- [ ] Edge Case 테스트 (조건 없음, 결과 없음 등) (D-20 ~ D-21)
-- [ ] 검색 품질 평가 (사용자 시나리오 10개) (D-21)
-
-**산출물:**
-- 검색 품질 향상 보고서
-- 근거 데이터 포함한 검색 결과
+> **TDD 진행 방식**:
+> - `/go` 명령어로 다음 미완료 테스트 자동 실행
+> - Red (테스트 실패) → Green (최소 구현) → Refactor (개선) 사이클 준수
+> - 각 테스트마다 `/commit-tdd` 또는 `/tidy` + `/commit` 실행
 
 ---
 
-#### BE-4 (Async & Queue - 승연)
-**핵심 목표:** 응답 속도 개선 (목표 < 5초)
+### Epic 1: Domain Layer - 리스크 점수 계산 로직
 
-**세부 태스크:**
-- [ ] Worker 병렬 처리 최적화 (D-15 ~ D-17)
-- [ ] 캐싱 전략 도입 (Redis) (D-17 ~ D-19)
-- [ ] Dead-letter Queue 설정 (D-19 ~ D-20)
-- [ ] 성능 부하 테스트 (동시 요청 10개) (D-20 ~ D-21)
-- [ ] 응답 시간 모니터링 (D-21)
+**목표**: 건축물 정보를 받아 리스크 점수를 계산하는 순수 도메인 로직 구현
 
-**산출물:**
-- 성능 테스트 결과 (목표: 평균 < 5초)
-- 캐싱 전략 문서
+**테스트 목록**:
 
----
+- [x] **test_risk_score_domain_model_creation**
+  - RiskScore 도메인 모델 생성 (score, factors, summary)
+  - dataclass로 구현, 기본값 설정
 
-#### BE-5 (Prompt Eng - 효진)
-**핵심 목표:** 프롬프트 튜닝 및 친절도 강화
+- [x] **test_calculate_risk_score_with_violation**
+  - 위반 건축물인 경우 리스크 점수 계산
+  - 위반 여부: True → 점수 +30
 
-**세부 태스크:**
-- [ ] "대학생 선배" 말투 개선 (더 친근하게) (D-15 ~ D-17)
-- [ ] 리스크 설명의 구체성 향상 (D-17 ~ D-19)
-- [ ] 다양한 상황별 프롬프트 추가 (D-19 ~ D-20)
-  - 좋은 매물일 때
-  - 위험한 매물일 때
-  - 애매한 매물일 때
-- [ ] A/B 테스트 (프롬프트 버전 비교) (D-20 ~ D-21)
-- [ ] 최종 프롬프트 확정 (D-21)
+- [x] **test_calculate_risk_score_without_seismic_design**
+  - 내진 설계 없는 경우 리스크 점수 계산
+  - 내진 설계: False → 점수 +25
 
-**산출물:**
-- 프롬프트 v2.0
-- A/B 테스트 결과
+- [x] **test_calculate_risk_score_by_building_age**
+  - 건물 노후도에 따른 리스크 점수 계산
+  - 30년 이상: +40, 20~30년: +30, 10~20년: +20, 10년 미만: +10
 
----
+- [x] **test_calculate_risk_score_combined**
+  - 여러 요소 결합된 리스크 점수 계산
+  - 위반 건축물 + 내진 미적용 + 30년 이상 = 95점
 
-#### BE-6 (Infra & CI/CD - 재현)
-**핵심 목표:** 로딩 애니메이션 및 모니터링 강화
+- [x] **test_generate_risk_summary_message**
+  - 리스크 점수에 따른 요약 메시지 생성
+  - 점수 범위별 적절한 메시지 반환
 
-**세부 태스크:**
-- [ ] 프론트엔드 로딩 UI 지원 (API 연동) (D-15 ~ D-17)
-- [ ] 리스크 시각화 차트 API 설계 (D-17 ~ D-18)
-- [ ] Sentry 에러 트래킹 설정 (D-18 ~ D-19)
-- [ ] 성능 모니터링 대시보드 구축 (D-19 ~ D-20)
-- [ ] 최종 발표용 배포 환경 안정화 (D-20 ~ D-21)
-
-**산출물:**
-- 모니터링 대시보드 (Grafana or 간단한 대시보드)
-- 배포 환경 최종 점검 체크리스트
+**파일**:
+- `modules/house_analysis/domain/model.py`
+- `modules/house_analysis/domain/service.py`
+- `test/house_analysis/domain/test_risk_service.py`
 
 ---
 
-### 3주차 체크포인트 (D-21)
-확인 사항:
-- [ ] 실제 데이터 100개가 정상 작동하는가?
-- [ ] 평균 응답 속도가 5초 이내인가?
-- [ ] 리스크 분석이 정확한가?
-- [ ] AI 답변이 친절하고 이해하기 쉬운가?
+### Epic 2: Domain Layer - 가격 적정성 계산 로직
+
+**목표**: 실거래가 데이터로 가격 적정성 점수를 계산하는 순수 도메인 로직 구현
+
+**테스트 목록**:
+
+- [x] **test_price_score_domain_model_creation**
+  - PriceScore 도메인 모델 생성 (score, comment, metrics)
+  - dataclass로 구현
+
+- [x] **test_calculate_price_per_area**
+  - 3.3㎡당 가격 계산
+  - 전세가 / 면적 * 3.3 = 평당 가격
+
+- [x] **test_calculate_price_score_above_average**
+  - 지역 평균 대비 높은 가격 점수 계산
+  - 평균 대비 +20% → 점수 40 (낮음)
+
+- [x] **test_calculate_price_score_below_average**
+  - 지역 평균 대비 낮은 가격 점수 계산
+  - 평균 대비 -10% → 점수 55 (보통)
+
+- [x] **test_calculate_price_score_at_average**
+  - 지역 평균과 동일한 가격 점수 계산
+  - 평균과 동일 → 점수 50
+
+- [x] **test_generate_price_comment**
+  - 가격 점수에 따른 코멘트 생성
+  - "동 평균 대비 약 22% 높은 가격"
+
+**파일**:
+- `modules/house_analysis/domain/model.py`
+- `modules/house_analysis/domain/service.py`
+- `test/house_analysis/domain/test_price_service.py`
 
 ---
 
-## 4주차: 안정화 및 최종 발표 (D-22 ~ D-28)
-**목표:** "완성도 높은 최종 발표 및 서비스 안정화"
+### Epic 3: Infrastructure - ORM 모델 정의
 
-### 전체 공통 목표
-- [ ] **D-25**: 최종 발표 리허설 1차
-- [ ] **D-27**: 최종 발표 리허설 2차
-- [ ] **D-28**: 최종 발표 및 프로젝트 완료
+**목표**: 분석 결과를 저장할 DB 테이블 ORM 정의
 
----
+**테스트 목록**:
 
-#### BE-1 (Team Lead - 해인)
-**핵심 목표:** 최종 버그 수정 및 QA
+- [x] **test_risk_score_history_orm_table_creation**
+  - RiskScoreHistory ORM 모델 정의
+  - 컬럼: id, address, risk_score, summary, factors(JSON), created_at
 
-**세부 태스크:**
-- [ ] 전체 시스템 통합 테스트 (D-22 ~ D-24)
-- [ ] 버그 수정 및 예외 처리 강화 (D-24 ~ D-26)
-- [ ] API 성능 최종 점검 (D-26 ~ D-27)
-- [ ] 최종 발표 시연 준비 (시나리오 작성) (D-27)
-- [ ] 발표 당일 기술 지원 (D-28)
+- [x] **test_price_score_history_orm_table_creation**
+  - PriceScoreHistory ORM 모델 정의
+  - 컬럼: id, address, deal_type, price_score, comment, metrics(JSON), created_at
 
-**산출물:**
-- QA 체크리스트 (완료)
-- 최종 발표 시연 시나리오
+- [x] **test_risk_score_history_save_and_load**
+  - RiskScoreHistory 저장 및 조회 테스트
+  - DB에 데이터 저장 후 조회하여 검증
 
-**최종 발표 기여:**
-- 시스템 전체 Flow 시연
+- [x] **test_price_score_history_save_and_load**
+  - PriceScoreHistory 저장 및 조회 테스트
+  - DB에 데이터 저장 후 조회하여 검증
 
----
-
-#### BE-2 (Risk Eng - 용준)
-**핵심 목표:** 리스크 데이터 최종 검증
-
-**세부 태스크:**
-- [ ] 실제 매물 Sample 50~100개 최종 점검 (D-22 ~ D-24)
-- [ ] 리스크 분석 결과 시각화 데이터 준비 (D-24 ~ D-26)
-- [ ] Edge Case 처리 (데이터 없을 때 등) (D-26 ~ D-27)
-- [ ] 발표 자료에 리스크 분석 예시 추가 (D-27)
-- [ ] 최종 발표 지원 (D-28)
-
-**산출물:**
-- 리스크 분석 결과 시각화 자료
-- Before/After 비교 슬라이드
-
-**최종 발표 기여:**
-- "왜 이 서비스가 대학생에게 필요한가?" 데이터 근거 제시
+**파일**:
+- `infrastructure/orm/risk_score_history_orm.py`
+- `infrastructure/orm/price_score_history_orm.py`
+- `test/house_analysis/infrastructure/test_orm.py`
 
 ---
 
-#### BE-3 (RAG Core - 장훈)
-**핵심 목표:** 검색 품질 최종 점검
+### Epic 4: Application Layer - Port 인터페이스 정의
 
-**세부 태스크:**
-- [ ] 최종 검색 성능 테스트 (D-22 ~ D-24)
-- [ ] 검색 결과 품질 검증 (정성 평가) (D-24 ~ D-26)
-- [ ] 발표용 검색 결과 Best Case 선정 (D-26 ~ D-27)
-- [ ] 발표 자료 작성 지원 (검색 품질 파트) (D-27)
-- [ ] 최종 발표 지원 (D-28)
+**목표**: 외부 의존성에 대한 추상 인터페이스(Port) 정의
 
-**산출물:**
-- 검색 품질 평가 결과
-- Best Case 검색 결과 샘플
+**테스트 목록**:
 
-**최종 발표 기여:**
-- "AI가 어떻게 추천하는가?" 설명
+- [x] **test_address_codec_port_interface**
+  - AddressCodecPort 인터페이스 정의
+  - 메서드: `convert_to_legal_code(address: str) -> dict`
 
----
+- [x] **test_building_ledger_port_interface**
+  - BuildingLedgerPort 인터페이스 정의
+  - 메서드: `fetch_building_info(legal_code: str) -> dict`
 
-#### BE-4 (Async & Queue - 승연)
-**핵심 목표:** 성능 안정화 및 모니터링
+- [x] **test_transaction_price_port_interface**
+  - TransactionPricePort 인터페이스 정의
+  - 메서드: `fetch_transaction_prices(legal_code: str, deal_type: str) -> list`
 
-**세부 태스크:**
-- [ ] 부하 테스트 (동시 요청 20개) (D-22 ~ D-24)
-- [ ] 병목 지점 파악 및 최적화 (D-24 ~ D-26)
-- [ ] 발표 당일 시스템 모니터링 준비 (D-26 ~ D-27)
-- [ ] 장애 대응 매뉴얼 작성 (D-27)
-- [ ] 발표 당일 기술 지원 (D-28)
+- [x] **test_risk_history_port_interface**
+  - RiskHistoryPort 인터페이스 정의
+  - 메서드: `save(risk_score: RiskScore) -> None`
 
-**산출물:**
-- 성능 테스트 최종 결과
-- 장애 대응 매뉴얼
+- [x] **test_price_history_port_interface**
+  - PriceHistoryPort 인터페이스 정의
+  - 메서드: `save(price_score: PriceScore) -> None`
 
-**최종 발표 기여:**
-- 시스템 안정성 설명
+**파일**:
+- `modules/house_analysis/application/port/address_codec_port.py`
+- `modules/house_analysis/application/port/building_ledger_port.py`
+- `modules/house_analysis/application/port/transaction_price_port.py`
+- `modules/house_analysis/application/port/risk_history_port.py`
+- `modules/house_analysis/application/port/price_history_port.py`
+- `test/house_analysis/application/port/test_ports.py`
 
 ---
 
-#### BE-5 (Prompt Eng - 효진)
-**핵심 목표:** 최종 프롬프트 확정 및 발표 자료
+### Epic 5: Application Layer - UseCase 구현 (Risk)
 
-**세부 태스크:**
-- [ ] 최종 프롬프트 버전 확정 (D-22 ~ D-24)
-- [ ] 발표용 AI 답변 Best Case 선정 (D-24 ~ D-26)
-- [ ] 발표 자료 작성 (AI 답변 품질 파트) (D-26 ~ D-27)
-- [ ] 발표 리허설 참여 (D-27)
-- [ ] 최종 발표 지원 (D-28)
+**목표**: 리스크 분석 유스케이스 구현 (Mock Port 사용)
 
-**산출물:**
-- 최종 프롬프트 v3.0
-- AI 답변 Best Case 10개
+**테스트 목록**:
 
-**최종 발표 기여:**
-- "AI가 어떻게 설명하는가?" 시연
+- [x] **test_analyze_risk_usecase_with_mocked_ports**
+  - Mock Port를 사용한 리스크 분석 유스케이스 테스트
+  - 주소 → 법정동 코드 → 건축물 정보 → 점수 계산 → DB 저장
 
----
+- [x] **test_analyze_risk_usecase_with_invalid_address**
+  - 잘못된 주소 입력 시 예외 처리
+  - AddressCodecPort에서 예외 발생 → 적절한 에러 응답
 
-#### BE-6 (Infra & CI/CD - 재현)
-**핵심 목표:** 최종 발표 환경 완벽 준비
+- [x] **test_analyze_risk_usecase_with_api_failure**
+  - 건축물대장 API 실패 시 예외 처리
+  - BuildingLedgerPort에서 예외 발생 → 적절한 에러 응답
 
-**세부 태스크:**
-- [ ] 발표용 배포 환경 최종 점검 (D-22 ~ D-24)
-- [ ] 백업 및 복구 계획 수립 (D-24 ~ D-25)
-- [ ] 발표 PPT 최종 정리 (D-25 ~ D-27)
-- [ ] 발표 리허설 2회 진행 (D-27)
-- [ ] 발표 당일 기술 총괄 (D-28)
+- [x] **test_analyze_risk_usecase_saves_to_history**
+  - 리스크 분석 결과가 히스토리에 저장되는지 검증
+  - RiskHistoryPort.save() 호출 확인
+  - (이미 test_analyze_risk_usecase_with_mocked_ports에서 검증됨)
 
-**산출물:**
-- 최종 발표 PPT (완성본)
-- 백업 계획서
-
-**최종 발표 기여:**
-- 전체 시스템 아키텍처 설명
+**파일**:
+- `modules/house_analysis/application/usecase/analyze_risk_usecase.py`
+- `modules/house_analysis/application/dto/risk_dto.py`
+- `test/house_analysis/application/usecase/test_analyze_risk_usecase.py`
 
 ---
 
-### 4주차 최종 발표 (D-28)
+### Epic 6: Application Layer - UseCase 구현 (Price)
 
-#### 발표 전략: Before/After 시나리오
+**목표**: 가격 분석 유스케이스 구현 (Mock Port 사용)
 
-**Before (기존 방식):**
-- 대학생 A는 직방, 다방을 보지만 어떤 집이 좋은지 모름
-- 중개인을 믿어야 하지만 불안함
-- 계약 후 문제 발생 (전세사기, 건축물 위반 등)
+**테스트 목록**:
 
-**After (본 서비스):**
-- 대학생 A가 조건 입력 (마포구, 전세 5000만원)
-- AI가 Top 3 매물 추천 + 이유 설명
-- **리스크 경고**: "이 집은 건축물대장 위반 이력이 있습니다"
-- A는 안심하고 계약 진행
+- [x] **test_analyze_price_usecase_with_mocked_ports**
+  - Mock Port를 사용한 가격 분석 유스케이스 테스트
+  - 주소 → 법정동 코드 → 실거래가 정보 → 점수 계산 → DB 저장
 
-#### 발표 시연 시나리오 (5분)
+- [x] **test_analyze_price_usecase_with_no_transaction_data**
+  - 실거래가 데이터가 없는 경우 처리
+  - 기본 점수 반환 또는 적절한 메시지
 
-1. **문제 제기** (1분)
-   - 대학생의 Pain Point
-   - 기존 서비스의 한계
+- [x] **test_analyze_price_usecase_with_different_deal_types**
+  - 거래 유형별(전세/월세) 가격 분석
+  - 각 거래 유형에 맞는 계산 로직 적용
 
-2. **솔루션 소개** (1분)
-   - 우리 서비스의 차별점
-   - 핵심 기능 3가지
+- [x] **test_analyze_price_usecase_saves_to_history**
+  - 가격 분석 결과가 히스토리에 저장되는지 검증
+  - PriceHistoryPort.save() 호출 확인
+  - (이미 test_analyze_price_usecase_with_mocked_ports에서 검증됨)
 
-3. **실제 시연** (2분)
-   - 요구사항 입력
-   - AI 추천 결과 (이유 + 리스크)
-   - Before/After 비교
-
-4. **기술 설명** (1분)
-   - RAG + 공공데이터 + LLM
-   - 시스템 아키텍처
-
-5. **결론 및 향후 계획** (30초)
-   - KR 달성 여부
-   - Phase 2 계획
+**파일**:
+- `modules/house_analysis/application/usecase/analyze_price_usecase.py`
+- `modules/house_analysis/application/dto/price_dto.py`
+- `test/house_analysis/application/usecase/test_analyze_price_usecase.py`
 
 ---
 
-## 📊 주차별 산출물 체크리스트
+### Epic 7: Adapter Layer - Repository 구현 (Output)
 
-### 1주차 산출물
-- [ ] ERD 확정본
-- [ ] Docker Compose 환경
-- [ ] 공공 API 연동 테스트 결과
-- [ ] 샘플 데이터 50개
-- [ ] 기본 인증 API
-- [ ] pgvector 세팅 완료
+**목표**: Port 인터페이스의 실제 구현체 작성
 
-### 2주차 산출물
-- [ ] 전체 API Flow 완성
-- [ ] RAG 검색 파이프라인
-- [ ] 리스크 분석 로직
-- [ ] 비동기 처리 시스템
-- [ ] LLM 프롬프트 v1.0
-- [ ] **챗봇 API 및 UI** ⭐ 신규
-- [ ] 중간 발표 PPT 및 데모
+**테스트 목록**:
 
-### 3주차 산출물
-- [ ] 실제 데이터 100개 적재
-- [ ] 응답 속도 < 5초 달성
-- [ ] 프롬프트 v2.0 (친절도 향상)
-- [ ] 리스크 시각화
-- [ ] 성능 테스트 결과
+- [x] **test_address_codec_repository_integration**
+  - 실제 주소 → 법정동 코드 변환 테스트
+  - (통합 테스트, VCR 사용 권장)
+  - 현재는 하드코딩된 샘플 데이터 반환, 추후 실제 API 연동 필요
 
-### 4주차 산출물
-- [ ] 통합 테스트 완료
-- [ ] 버그 수정 완료
-- [ ] 최종 발표 PPT
-- [ ] 시연 시나리오
-- [ ] 프로젝트 회고 문서
+- [x] **test_building_ledger_repository_integration**
+  - 실제 건축물대장 API 호출 테스트
+  - (통합 테스트, VCR 사용 권장)
+  - 공공데이터포털 건축물대장 API 실제 연동 완료 (법정동코드 분리, 번/지 4자리 패딩)
 
----
+- [x] **test_transaction_price_repository_integration**
+  - 실제 실거래가 API 호출 테스트
+  - (통합 테스트, VCR 사용 권장)
+  - 국토교통부 실거래가 API 실제 연동 완료 (아파트 매매/전월세 API 지원)
 
-## 🚨 리스크 관리 및 대응 전략
+- [ ] **test_risk_history_repository_save**
+  - RiskHistoryRepository의 save() 메서드 테스트
+  - 실제 DB 또는 in-memory DB 사용
 
-### 기술적 리스크
+- [ ] **test_price_history_repository_save**
+  - PriceHistoryRepository의 save() 메서드 테스트
+  - 실제 DB 또는 in-memory DB 사용
 
-#### 리스크 1: 공공 API 응답 느림 또는 장애
-- **대응**: 캐싱 전략 (Redis), 주기적 데이터 수집 후 DB 저장
-- **담당**: BE-2 (용준), BE-4 (승연)
-
-#### 리스크 2: RAG 검색 정확도 낮음
-- **대응**: 하이브리드 검색 (키워드 + 벡터), 가중치 튜닝
-- **담당**: BE-3 (장훈)
-
-#### 리스크 3: LLM 응답 품질 낮음
-- **대응**: 프롬프트 A/B 테스트, 페르소나 지속 개선
-- **담당**: BE-5 (효진)
-
-#### 리스크 4: 비동기 처리 병목
-- **대응**: Worker 스케일링, 캐싱, 성능 프로파일링
-- **담당**: BE-4 (승연)
-
-### 일정 리스크
-
-#### 리스크 5: 중간 발표 준비 부족
-- **대응**: D-10부터 데모 시나리오 작성, 리허설 필수
-- **담당**: 전체 팀
-
-#### 리스크 6: 최종 발표 당일 장애
-- **대응**: 백업 환경 준비, 사전 점검 2회, 매뉴얼 작성
-- **담당**: BE-6 (재현), BE-1 (해인)
-
-### 팀워크 리스크
-
-#### 리스크 7: 팀원 간 소통 부족
-- **대응**: 매주 회고 미팅, Slack/Discord 활용, 일일 스탠드업 (선택)
-- **담당**: BE-1 (해인)
-
-#### 리스크 8: 작업 의존성 블로킹
-- **대응**: Mock 데이터 우선 사용, 병렬 작업 최대화
-- **담당**: 전체 팀
+**파일**:
+- `modules/house_analysis/adapter/output/repository/address_codec_repository.py`
+- `modules/house_analysis/adapter/output/repository/building_ledger_repository.py`
+- `modules/house_analysis/adapter/output/repository/transaction_price_repository.py`
+- `modules/house_analysis/adapter/output/repository/risk_history_repository.py`
+- `modules/house_analysis/adapter/output/repository/price_history_repository.py`
+- `test/house_analysis/adapter/output/repository/test_repositories.py`
 
 ---
 
-## 📞 협업 및 소통 전략
+### Epic 8: Adapter Layer - FastAPI Router 구현 (Input)
 
-### 일일 스탠드업 (선택)
-- **시간**: 매일 오전 10시 (15분)
-- **내용**: 어제 한 일, 오늘 할 일, 블로킹 이슈
+**목표**: HTTP API 엔드포인트 구현
 
-### 주간 회고 미팅 (필수)
-- **시간**: 매주 토요일 오후 2시 (1시간)
-- **내용**: 주간 목표 달성 여부, 다음 주 계획, 개선 사항
+**테스트 목록**:
 
-### 코드 리뷰
-- **방식**: Pull Request 기반
-- **리뷰어**: BE-1 (해인) 필수, 관련 팀원 1명 추가
-- **기준**: 24시간 내 리뷰 완료
+- [ ] **test_risk_analysis_endpoint_success**
+  - GET /api/house_analysis/risk 성공 케이스
+  - 올바른 주소 입력 → 200 OK, 리스크 점수 반환
 
-### 문서화
-- **Wiki**: 기술 스펙, API 문서, 의사결정 기록
-- **README**: 설치 가이드, 실행 방법
-- **CHANGELOG**: 주요 변경 사항 기록
+- [ ] **test_risk_analysis_endpoint_validation_error**
+  - GET /api/house_analysis/risk 유효성 검증 실패
+  - 빈 주소 입력 → 422 Unprocessable Entity
 
----
+- [ ] **test_price_analysis_endpoint_success**
+  - GET /api/house_analysis/price 성공 케이스
+  - 올바른 주소 + 거래유형 → 200 OK, 가격 점수 반환
 
-## 🎯 최종 목표 달성 지표
+- [ ] **test_price_analysis_endpoint_missing_deal_type**
+  - GET /api/house_analysis/price deal_type 누락
+  - 422 Unprocessable Entity
 
-### KR1: 대학생이 "이 집이 나에게 맞는다"는 연결 경험
-- **측정**: 최종 발표 시연 성공 여부
-- **목표**: 시연 시나리오 3개 모두 성공
+- [ ] **test_router_dependency_injection**
+  - FastAPI의 Depends를 사용한 DB 세션 주입 확인
+  - get_db_session()이 올바르게 주입되는지 검증
 
-### KR2: 평균 추천 응답 속도 < 5초
-- **측정**: 성능 테스트 결과
-- **목표**: 평균 4.5초 이내
-
-### KR3: 중간 발표 Flow 시연 성공
-- **측정**: 중간 발표 피드백
-- **목표**: "Flow가 명확하다" 평가 받기
-
-### KR4: 최종 발표 Before/After 시나리오 시연
-- **측정**: 최종 발표 완성도
-- **목표**: 청중이 "이해했다" 반응
+**파일**:
+- `modules/house_analysis/adapter/input/web/router/house_analysis_router.py`
+- `modules/house_analysis/adapter/input/web/request/risk_request.py`
+- `modules/house_analysis/adapter/input/web/request/price_request.py`
+- `modules/house_analysis/adapter/input/web/response/risk_response.py`
+- `modules/house_analysis/adapter/input/web/response/price_response.py`
+- `test/house_analysis/adapter/input/web/test_house_analysis_router.py`
 
 ---
 
-## 📚 참고 자료 및 문서
+### Epic 9: Integration - main.py 연동 및 E2E 테스트
 
-### 기술 문서
-- [OpenAI API Documentation](https://platform.openai.com/docs)
-- [pgvector GitHub](https://github.com/pgvector/pgvector)
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [RabbitMQ Tutorial](https://www.rabbitmq.com/tutorials)
+**목표**: 전체 시스템 통합 및 엔드투엔드 테스트
 
-### 공공 데이터
-- [국토교통부 실거래가 API](https://www.data.go.kr/)
-- [건축물대장 정보 API](https://www.data.go.kr/)
+**테스트 목록**:
 
-### 프로젝트 문서
-- `PRD.md`: 제품 요구사항 정의서
-- `ERD.md`: 데이터베이스 스키마
-- `API_SPEC.md`: API 명세서
-- `ARCHITECTURE.md`: 시스템 아키텍처
+- [ ] **test_main_app_includes_house_analysis_router**
+  - main.py에 house_analysis_router가 등록되었는지 확인
+  - app.router.routes에서 확인
+
+- [ ] **test_e2e_risk_analysis_flow**
+  - 실제 API 호출 → DB 저장까지 전체 흐름 테스트
+  - TestClient 사용, Mock 없이 실제 흐름 검증
+
+- [ ] **test_e2e_price_analysis_flow**
+  - 실제 API 호출 → DB 저장까지 전체 흐름 테스트
+  - TestClient 사용, Mock 없이 실제 흐름 검증
+
+- [ ] **test_concurrent_requests_handling**
+  - 동시 요청 처리 테스트
+  - 여러 클라이언트가 동시에 요청해도 정상 동작 확인
+
+**파일**:
+- `app/main.py` (수정)
+- `test/house_analysis/integration/test_e2e.py`
+
+---
+
+## 🎯 테스트 진행 순서 요약
+
+1. **Epic 1-2**: Domain Layer (외부 의존성 없음, 가장 먼저)
+2. **Epic 3**: Infrastructure ORM (DB 테이블 생성)
+3. **Epic 4**: Application Port (인터페이스만 정의)
+4. **Epic 5-6**: Application UseCase (Mock Port 사용)
+5. **Epic 7**: Adapter Repository (실제 구현)
+6. **Epic 8**: Adapter Router (API 엔드포인트)
+7. **Epic 9**: Integration (전체 통합)
+
+**총 테스트 수**: 약 35개
 
 ---
 
-## ✅ 주차별 체크리스트 요약
+## 📝 개발 가이드
 
-### 1주차 (D-0 ~ D-7)
-- [ ] ERD 확정
-- [ ] 개발 환경 세팅
-- [ ] 공공 API 연동
-- [ ] 테스트 데이터 50개
-- [ ] 기본 기능 뼈대
+### TDD 사이클 실행 방법
 
-### 2주차 (D-8 ~ D-14)
-- [ ] 전체 Flow 완성
-- [ ] 중간 발표 성공
-- [ ] RAG + Risk + LLM 통합
-- [ ] 비동기 처리 구현
+```bash
+# 1. 다음 테스트 자동 실행
+/go
 
-### 3주차 (D-15 ~ D-21)
-- [ ] 실제 데이터 100개
-- [ ] 응답 속도 < 5초
-- [ ] 프롬프트 최적화
-- [ ] 성능 테스트 완료
+# 2. 테스트가 실패하는지 확인 (Red)
+pytest <test_file>::<test_name> -v
 
-### 4주차 (D-22 ~ D-28)
-- [ ] 버그 수정 완료
-- [ ] 최종 발표 준비
-- [ ] 시연 시나리오 완성
-- [ ] 프로젝트 완료 🎉
+# 3. 최소한의 코드로 테스트 통과 (Green)
+# ... 코드 작성 ...
+pytest <test_file>::<test_name> -v
+
+# 4. 리팩터링 필요 시
+/refactor
+
+# 5. 구조 개선만 필요한 경우
+/tidy
+
+# 6. 커밋
+/commit-tdd  # 자동으로 structural/behavioral 구분
+```
+
+### 백로그 생성
+
+```bash
+# 특정 테스트의 백로그 생성 (plan.md에서 텍스트 선택 후)
+/backlog
+
+# 또는 다음 미완료 테스트의 백로그 자동 생성
+/backlog
+```
+
+### 테스트 실행
+
+```bash
+# 전체 테스트
+pytest
+
+# 특정 모듈
+pytest test/house_analysis/
+
+# 특정 파일
+pytest test/house_analysis/domain/test_risk_service.py
+
+# 특정 테스트
+pytest test/house_analysis/domain/test_risk_service.py::test_calculate_risk_score_with_violation -v
+
+# 커버리지 포함
+pytest --cov=modules/house_analysis --cov-report=html
+```
 
 ---
+
+## ✅ 완료 기준
+
+### Epic별 완료 조건
+
+- [ ] 모든 테스트 통과 (Green)
+- [ ] 코드 리뷰 완료
+- [ ] 커밋 완료 (`/commit-tdd` 또는 `/tidy` + `/commit`)
+- [ ] plan.md의 해당 Epic 체크박스 체크
+
+### 전체 프로젝트 완료 조건
+
+- [ ] 총 35개 테스트 모두 통과
+- [ ] API 엔드포인트 정상 동작 확인
+  - `GET /api/house_analysis/risk?address=서울시 강남구 역삼동 777`
+  - `GET /api/house_analysis/price?address=서울시 강남구 역삼동 777&deal_type=전세`
+- [ ] DB에 분석 결과 저장 확인
+  - `risk_score_history` 테이블에 데이터 존재
+  - `price_score_history` 테이블에 데이터 존재
+- [ ] main.py에 router 등록 완료
+- [ ] 전체 테스트 커버리지 > 80%
+
+---
+
+## 🚀 다음 단계
+
+1. `/go` 명령어로 첫 번째 테스트부터 시작
+2. Red → Green → Refactor 사이클 반복
+3. 각 Epic 완료 시 체크박스 체크
+4. 최종 통합 테스트 및 문서화
+
