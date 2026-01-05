@@ -253,6 +253,7 @@ class HousePlatformRepository(HousePlatformRepositoryPort):
             registered_at=model.registered_at,
             domain_id=model.domain_id,
             rgst_no=model.rgst_no,
+            snapshot_id=model.snapshot_id,
             pnu_cd=model.pnu_cd,
             is_banned=model.is_banned,
             sales_type=model.sales_type,

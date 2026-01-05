@@ -21,6 +21,7 @@ class HousePlatformUpsertModel:
     registered_at: datetime | None = None
     domain_id: int | HousePlatformDomainType | None = HousePlatformDomainType.ZIGBANG
     rgst_no: str | None = None
+    snapshot_id: str | None = None
     pnu_cd: str | None = None
     is_banned: bool | None = None
     sales_type: str | None = None

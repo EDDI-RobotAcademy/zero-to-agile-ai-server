@@ -31,6 +31,7 @@ class HousePlatformORM(Base):
     registered_at = Column(DateTime, nullable=True)
     domain_id = Column(Integer, server_default=text("1"), nullable=True)
     rgst_no = Column(String(50), nullable=True)
+    snapshot_id = Column(String(64), nullable=True)
     pnu_cd = Column(Text, nullable=True)
     is_banned = Column(Boolean, server_default=text("false"), nullable=True)
     sales_type = Column(String(20), nullable=True)

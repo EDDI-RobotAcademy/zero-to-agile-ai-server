@@ -5,6 +5,9 @@ from modules.house_platform.application.dto.fetch_and_store_dto import (
     FetchAndStoreCommand,
     FetchAndStoreResult,
 )
+from modules.house_platform.application.factory.house_platform_snapshot_factory import (
+    build_house_platform_snapshot_id,
+)
 from modules.house_platform.application.port_in.fetch_and_store_house_platform_port import (
     FetchAndStoreHousePlatformPort,
 )
@@ -63,6 +66,11 @@ class FetchAndStoreHousePlatformService(FetchAndStoreHousePlatformPort):
         bundles, errors = self.adapter.convert_details(
             filtered, errors, skip_ids=existing
         )
+        for bundle in bundles:
+            # 스냅샷 ID를 생성해 저장에 반영한다.
+            bundle.house_platform.snapshot_id = build_house_platform_snapshot_id(
+                bundle
+            )
         stored = self.repository_port.upsert_batch(bundles) if bundles else 0
         skipped = fetched - len(bundles)
 
