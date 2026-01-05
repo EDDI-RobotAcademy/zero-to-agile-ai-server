@@ -17,6 +17,7 @@ class FinderRequestResponse(BaseModel):
     status: str = Field(..., description="상태 (Y: 활성, N: 비활성)")
     house_type: Optional[str] = Field(None, description="주거 형태")
     additional_condition: Optional[str] = Field(None, description="추가 조건")
+    university_name: Optional[str] = Field(None, description="대학교 이름")
     created_at: Optional[datetime] = Field(None, description="생성 시각")
     updated_at: Optional[datetime] = Field(None, description="수정 시각")
     

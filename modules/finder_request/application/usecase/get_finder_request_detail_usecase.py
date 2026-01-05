@@ -39,6 +39,7 @@ class GetFinderRequestDetailUseCase:
             max_rent=finder_request.max_rent,
             house_type=finder_request.house_type,
             additional_condition=finder_request.additional_condition,
+            university_name=finder_request.university_name,
             created_at=finder_request.created_at,
             updated_at=finder_request.updated_at
         )
