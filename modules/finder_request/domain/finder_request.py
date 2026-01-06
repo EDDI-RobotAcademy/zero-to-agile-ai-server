@@ -17,6 +17,7 @@ class FinderRequest:
     max_rent: Optional[int] = None
     house_type: Optional[str] = None
     additional_condition: Optional[str] = None
+    university_name: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

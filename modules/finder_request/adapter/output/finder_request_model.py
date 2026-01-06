@@ -20,3 +20,4 @@ class FinderRequestModel(Base):
     updated_at = Column(DateTime, nullable=True, server_default=func.now(), onupdate=func.now())
     house_type = Column(String, nullable=True)
     additional_condition = Column(String, nullable=True)
+    university_name = Column(String(30), nullable=True)

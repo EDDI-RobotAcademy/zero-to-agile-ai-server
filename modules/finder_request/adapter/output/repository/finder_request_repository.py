@@ -37,7 +37,8 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
                 max_rent=finder_request.max_rent,
                 status=finder_request.status,
                 house_type=finder_request.house_type,
-                additional_condition=finder_request.additional_condition
+                additional_condition=finder_request.additional_condition,
+                university_name=finder_request.university_name
             )
             
             self.db.add(model)
@@ -84,6 +85,7 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
             max_rent=model.max_rent,
             house_type=model.house_type,
             additional_condition=model.additional_condition,
+            university_name=model.university_name,
             created_at=model.created_at,
             updated_at=model.updated_at
         )
@@ -140,6 +142,8 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
                 model.house_type = finder_request.house_type
             if finder_request.additional_condition is not None:
                 model.additional_condition = finder_request.additional_condition
+            if finder_request.university_name is not None:
+                model.university_name = finder_request.university_name
             if finder_request.status is not None:
                 model.status = finder_request.status
 
