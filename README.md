@@ -27,6 +27,19 @@ FastAPI 기반으로 **Hexagonal Architecture**를 적용하여
 │   └── orm                       # ORM 모델 정의
 │       └── __init__.py           # SQLAlchemy Base, 테이블 매핑 클래스
 │
+├── shared                        # ⭐ 공통 유틸/설정 모음
+│   ├── __init__.py               # shared 패키지 선언
+│   │
+│   ├── infrastructure            # 공통 인프라 설정
+│   │   ├── __init__.py
+│   │   └── config                # 공통 설정 (예: LLM, 환경변수)
+│   │       └── __init__.py
+│   │
+│   └── common                    # 공통 유틸리티/헬퍼
+│       ├── __init__.py
+│       └── utils                 # 토큰 카운터 등
+│           └── __init__.py
+│
 ├── modules                       # ⭐ 도메인별 모듈 (팀원 단위 협업의 핵심)
 │   ├── __init__.py               # modules 패키지 선언
 │   │
@@ -63,7 +76,10 @@ FastAPI 기반으로 **Hexagonal Architecture**를 적용하여
 │       │   ├── dto                # 유스케이스용 DTO
 │       │   │   └── __init__.py
 │       │   │
-│       │   ├── port               # Application Port (의존성 인터페이스)
+│       │   ├── port_in            # Inbound Port (입력 인터페이스)
+│       │   │   └── __init__.py
+│       │   │
+│       │   ├── port_out           # Outbound Port (출력 인터페이스)
 │       │   │   └── __init__.py
 │       │   │
 │       │   └── usecase            # 실제 비즈니스 흐름 구현
