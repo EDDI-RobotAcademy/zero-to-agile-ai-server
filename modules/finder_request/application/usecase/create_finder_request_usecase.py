@@ -54,6 +54,7 @@ class CreateFinderRequestUseCase:
             max_rent=dto.max_rent,
             house_type=dto.house_type,
             additional_condition=dto.additional_condition,
+            university_name=dto.university_name,
             created_at=None,
             updated_at=None
         )
@@ -74,6 +75,7 @@ class CreateFinderRequestUseCase:
             max_rent=created.max_rent,
             house_type=created.house_type,
             additional_condition=created.additional_condition,
+            university_name=created.university_name,
             created_at=created.created_at,
             updated_at=created.updated_at
         )

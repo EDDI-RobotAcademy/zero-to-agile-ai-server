@@ -36,6 +36,7 @@ class ViewFinderRequestsUseCase:
                 max_rent=req.max_rent,
                 house_type=req.house_type,
                 additional_condition=req.additional_condition,
+                university_name=req.university_name,
                 created_at=req.created_at,
                 updated_at=req.updated_at
             )

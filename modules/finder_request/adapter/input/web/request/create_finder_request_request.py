@@ -14,5 +14,6 @@ class CreateFinderRequestRequest(BaseModel):
     max_rent: Optional[int] = Field(None, description="최대 월세")
     house_type: Optional[str] = Field(None, description="주거 형태 (예: 원룸, 투룸, 오피스텔 등)")
     additional_condition: Optional[str] = Field(None, description="추가 조건")
+    university_name: Optional[str] = Field(None, description="대학교 이름", max_length=30)
     # ⭐ 활성화 상태 (default = Y)
     status: Literal["Y", "N"] = Field(default="Y",description="활성화 상태 (Y: 활성, N: 비활성)",examples=["Y"])

@@ -43,6 +43,7 @@ class EditFinderRequestUseCase:
         max_rent: Optional[int] = None,
         house_type: Optional[str] = None,
         additional_condition: Optional[str] = None,
+        university_name: Optional[str] = None,
         status: Optional[str] = None
     ) -> Optional[FinderRequestDTO]:
         """
@@ -57,6 +58,7 @@ class EditFinderRequestUseCase:
             max_rent: 최대 월세 (선택)
             house_type: 주거 형태 (선택)
             additional_condition: 추가 조건 (선택)
+            university_name: 대학교 이름 (선택)
             status: 상태 (선택) - Y: 활성, N: 비활성
             
         Returns:
@@ -82,7 +84,8 @@ class EditFinderRequestUseCase:
             max_deposit=max_deposit if max_deposit is not None else existing.max_deposit,
             max_rent=max_rent if max_rent is not None else existing.max_rent,
             house_type=house_type if house_type is not None else existing.house_type,
-            additional_condition=additional_condition if additional_condition is not None else existing.additional_condition
+            additional_condition=additional_condition if additional_condition is not None else existing.additional_condition,
+            university_name=university_name if university_name is not None else existing.university_name
         )
         
         # Repository를 통한 업데이트
@@ -104,6 +107,7 @@ class EditFinderRequestUseCase:
             max_rent=updated.max_rent,
             house_type=updated.house_type,
             additional_condition=updated.additional_condition,
+            university_name=updated.university_name,
             created_at=updated.created_at,
             updated_at=updated.updated_at
         )

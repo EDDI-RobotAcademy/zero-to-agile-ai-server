@@ -55,6 +55,7 @@ def create_finder_request(
             max_rent=request.max_rent,
             house_type=request.house_type,
             additional_condition=request.additional_condition,
+            university_name=request.university_name,
             status=request.status
         )
         
@@ -72,6 +73,7 @@ def create_finder_request(
             status=result.status,
             house_type=result.house_type,
             additional_condition=result.additional_condition,
+            university_name=result.university_name,
             created_at=result.created_at,
             updated_at=result.updated_at
         )
@@ -113,6 +115,7 @@ def view_finder_requests(
                 status=result.status,
                 house_type=result.house_type,
                 additional_condition=result.additional_condition,
+                university_name=result.university_name,
                 created_at=result.created_at,
                 updated_at=result.updated_at
             )
@@ -162,6 +165,7 @@ def get_finder_request_detail(
             status=result.status,
             house_type=result.house_type,
             additional_condition=result.additional_condition,
+            university_name=result.university_name,
             created_at=result.created_at,
             updated_at=result.updated_at
         )
@@ -209,6 +213,7 @@ def edit_finder_request(
             max_rent=request.max_rent,
             house_type=request.house_type,
             additional_condition=request.additional_condition,
+            university_name=request.university_name,
             status=request.status
         )
         
@@ -229,6 +234,7 @@ def edit_finder_request(
             status=result.status,
             house_type=result.house_type,
             additional_condition=result.additional_condition,
+            university_name=result.university_name,
             created_at=result.created_at,
             updated_at=result.updated_at
         )
