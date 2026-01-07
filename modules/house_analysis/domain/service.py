@@ -1,6 +1,51 @@
 from typing import Dict, Any
 
 
+def parse_pnu(pnu_id: str) -> Dict[str, str]:
+    """
+    PNU(필지번호) 19자리를 법정동코드, 본번, 지번으로 파싱
+
+    PNU 구조 (19자리):
+    - 법정동코드 (10자리)
+    - 대지구분 (1자리): 1=대지, 2=산 (무시)
+    - 본번 (4자리): 0000~9999
+    - 부번 (4자리): 0000~9999
+
+    Args:
+        pnu_id: 19자리 PNU 문자열
+
+    Returns:
+        Dict containing:
+        - legal_code: 법정동코드 (10자리)
+        - bun: 본번 (앞의 0 제거)
+        - ji: 부번 (앞의 0 제거, 0000이면 "0")
+
+    Raises:
+        ValueError: PNU ID가 19자리가 아닌 경우
+    """
+    if len(pnu_id) != 19:
+        raise ValueError("PNU ID는 19자리여야 합니다")
+
+    # 법정동코드 (0~9)
+    legal_code = pnu_id[0:10]
+
+    # 대지구분 (10) - 무시
+
+    # 본번 (11~14)
+    bun_raw = pnu_id[11:15]
+    bun = str(int(bun_raw))  # 앞의 0 제거
+
+    # 부번 (15~18)
+    ji_raw = pnu_id[15:19]
+    ji = str(int(ji_raw))  # 앞의 0 제거
+
+    return {
+        "legal_code": legal_code,
+        "bun": bun,
+        "ji": ji,
+    }
+
+
 def calculate_risk_score(building_info: Dict[str, Any]) -> int:
     """
     건축물 정보를 받아 리스크 점수를 계산하는 순수 도메인 로직
