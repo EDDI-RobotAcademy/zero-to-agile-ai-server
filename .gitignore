@@ -429,3 +429,7 @@ downloaded_docs/
 .idea/zero-to-two-ai-server.iml
 
 *.crawl_state_house_platform
+.claude/
+plan.md
+prd.md
+CLAUDE.md

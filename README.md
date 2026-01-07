@@ -2,7 +2,7 @@
 
 Zero to Agile AI Server 프로젝트입니다.  
 FastAPI 기반으로 **Hexagonal Architecture**를 적용하여  
-도메인 단위 협업과 확장성을 고려한 구조를 사용합니다.
+도메인 단위 협업과 확장성을 고려한 구조를 사용합니다..
 
 ---
 
