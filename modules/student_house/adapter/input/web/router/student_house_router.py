@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from infrastructure.db.postgres import get_db_session
 from infrastructure.external.embedding_agent import OpenAIEmbeddingAgent
-from modules.ai_explaination.adapter.input.web.request.recommendation_chatbot import (
+from modules.ai_explaination.adapter.input.web.request.recommendation_explaination import (
     RecommendationChatbotRequest,
     RecommendationItem,
 )

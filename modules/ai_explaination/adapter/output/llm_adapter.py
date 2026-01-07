@@ -4,7 +4,7 @@ from typing import List
 
 from openai import OpenAI
 
-from modules.ai_explaination.adapter.input.web.request.recommendation_chatbot import (
+from modules.ai_explaination.adapter.input.web.request.recommendation_explaination import (
     RecommendationItem,
 )
 from modules.ai_explaination.application.port.llm_port import LLMPort

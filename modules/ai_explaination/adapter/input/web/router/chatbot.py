@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from modules.ai_explaination.adapter.input.web.request.recommendation_chatbot import (
+from modules.ai_explaination.adapter.input.web.request.recommendation_explaination import (
     RecommendationChatbotRequest,
 )
 from modules.ai_explaination.adapter.input.web.response.recommendation_chatbot import (

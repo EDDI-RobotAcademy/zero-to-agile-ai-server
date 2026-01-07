@@ -1,6 +1,6 @@
 from typing import List
 
-from modules.ai_explaination.adapter.input.web.request.recommendation_chatbot import (
+from modules.ai_explaination.adapter.input.web.request.recommendation_explaination import (
     RecommendationItem,
 )
 from modules.ai_explaination.adapter.input.web.request.tenant_preference import (
