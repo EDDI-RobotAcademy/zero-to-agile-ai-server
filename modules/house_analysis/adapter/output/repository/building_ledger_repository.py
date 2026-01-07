@@ -1,4 +1,4 @@
-﻿"""
+"""
 Building ledger API repository.
 """
 import xml.etree.ElementTree as ET

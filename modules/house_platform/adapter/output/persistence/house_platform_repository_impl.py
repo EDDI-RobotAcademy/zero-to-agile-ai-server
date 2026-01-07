@@ -2,7 +2,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from modules.house_platform.application.port.output.house_platform_repository import HousePlatformRepository
 from modules.house_platform.domain.house_platform import HousePlatform
-from infrastructure.orm.house_platform import HousePlatform as HousePlatformORM
+from modules.house_platform.infrastructure.orm.house_platform_orm import HousePlatformORM
 
 class HousePlatformRepositoryImpl(HousePlatformRepository):
     def __init__(self, db_session_factory):
