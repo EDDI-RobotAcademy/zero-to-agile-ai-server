@@ -34,7 +34,7 @@ class HousePlatformRepositoryImpl(HousePlatformRepository):
             gu_nm=orm.gu_nm,
             dong_nm=orm.dong_nm,
             registered_at=orm.registered_at,
-            crawled_at=orm.crawled_at,
+            crawled_at=None, # ORM doesn't have crawled_at
             snapshot_id=orm.snapshot_id,
             abang_user_id=orm.abang_user_id,
             created_at=orm.created_at,

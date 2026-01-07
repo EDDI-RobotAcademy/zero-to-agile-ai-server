@@ -18,4 +18,3 @@ async def auth_required(
     user_id = token_service.verify_access_token(token)
 
     return user_id
-
