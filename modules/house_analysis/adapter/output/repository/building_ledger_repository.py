@@ -117,6 +117,7 @@ class BuildingLedgerRepository(BuildingLedgerPort):
                 "has_seismic_design": has_seismic_design,
                 "building_age": building_age,
                 "main_use": main_use,
+                "approval_date": use_apr_day or None,
             }
 
         except ET.ParseError as exc:
