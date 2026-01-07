@@ -19,6 +19,7 @@ from modules.chatbot.adapter.input.web.router.chat_router import router as chat_
 from modules.abang_user.adapter.input.web.router.abang_user_router import router as abang_user_router
 from modules.university.adapter.input.web.router.university_router import router as university_router
 from modules.house_platform.adapter.input.web.router.house_platform_router import router as house_platform_router
+from modules.send_message.adapter.input.web.router.send_message_router import router as send_message_router
 
 load_dotenv()
 app = FastAPI()
@@ -63,6 +64,9 @@ api_router.include_router(university_router)
 
 # ✅ house_platform_router를 api_router 아래에 등록 (/api + /house_platforms = /api/house_platforms)
 api_router.include_router(house_platform_router)
+
+# ✅ send_message_router를 api_router 아래에 등록 (/api + /messages = /api/messages)
+api_router.include_router(send_message_router)
 
 # 등록한 /api 라우터를 메인 앱에 연결합니다.
 app.include_router(api_router)
