@@ -285,6 +285,7 @@ class HousePlatformRepository(HousePlatformRepositoryPort):
             title=model.title,
             address=model.address,
             deposit=model.deposit,
+            abang_user_id=model.abang_user_id,
             created_at=model.created_at,
             updated_at=model.updated_at,
             registered_at=model.registered_at,

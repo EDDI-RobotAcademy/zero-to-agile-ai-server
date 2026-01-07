@@ -29,6 +29,12 @@ class HousePlatformORM(Base):
     title = Column(Text, nullable=True, comment="매물 제목")
     address = Column(Text, nullable=True, comment="매물 주소")
     deposit = Column(BigInteger, nullable=True, comment="보증금")
+    abang_user_id = Column(
+        BigInteger,
+        nullable=False,
+        server_default=text("-1"),
+        comment="등록 사용자 ID",
+    )
     created_at = Column(
         DateTime, server_default=func.now(), nullable=True, comment="게시 시각"
     )

@@ -16,6 +16,7 @@ class HousePlatformUpsertModel:
     title: str | None = None
     address: str | None = None
     deposit: int | None = None
+    abang_user_id: int | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     registered_at: datetime | None = None
