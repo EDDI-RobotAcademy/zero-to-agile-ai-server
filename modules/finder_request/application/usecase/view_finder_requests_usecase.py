@@ -37,6 +37,13 @@ class ViewFinderRequestsUseCase:
                 house_type=req.house_type,
                 additional_condition=req.additional_condition,
                 university_name=req.university_name,
+                roomcount=req.roomcount,
+                bathroomcount=req.bathroomcount,
+                is_near=req.is_near,
+                aircon_yn=req.aircon_yn,
+                washer_yn=req.washer_yn,
+                fridge_yn=req.fridge_yn,
+                max_building_age=req.max_building_age,
                 created_at=req.created_at,
                 updated_at=req.updated_at
             )

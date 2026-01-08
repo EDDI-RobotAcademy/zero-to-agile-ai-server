@@ -38,7 +38,14 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
                 status=finder_request.status,
                 house_type=finder_request.house_type,
                 additional_condition=finder_request.additional_condition,
-                university_name=finder_request.university_name
+                university_name=finder_request.university_name,
+                roomcount=finder_request.roomcount,
+                bathroomcount=finder_request.bathroomcount,
+                is_near=finder_request.is_near,
+                aircon_yn=finder_request.aircon_yn,
+                washer_yn=finder_request.washer_yn,
+                fridge_yn=finder_request.fridge_yn,
+                max_building_age=finder_request.max_building_age
             )
             
             self.db.add(model)
@@ -86,6 +93,13 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
             house_type=model.house_type,
             additional_condition=model.additional_condition,
             university_name=model.university_name,
+            roomcount=model.roomcount,
+            bathroomcount=model.bathroomcount,
+            is_near=model.is_near,
+            aircon_yn=model.aircon_yn,
+            washer_yn=model.washer_yn,
+            fridge_yn=model.fridge_yn,
+            max_building_age=model.max_building_age,
             created_at=model.created_at,
             updated_at=model.updated_at
         )
@@ -144,6 +158,20 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
                 model.additional_condition = finder_request.additional_condition
             if finder_request.university_name is not None:
                 model.university_name = finder_request.university_name
+            if finder_request.roomcount is not None:
+                model.roomcount = finder_request.roomcount
+            if finder_request.bathroomcount is not None:
+                model.bathroomcount = finder_request.bathroomcount
+            if finder_request.is_near is not None:
+                model.is_near = finder_request.is_near
+            if finder_request.aircon_yn is not None:
+                model.aircon_yn = finder_request.aircon_yn
+            if finder_request.washer_yn is not None:
+                model.washer_yn = finder_request.washer_yn
+            if finder_request.fridge_yn is not None:
+                model.fridge_yn = finder_request.fridge_yn
+            if finder_request.max_building_age is not None:
+                model.max_building_age = finder_request.max_building_age
             if finder_request.status is not None:
                 model.status = finder_request.status
 
