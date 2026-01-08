@@ -55,6 +55,13 @@ class CreateFinderRequestUseCase:
             house_type=dto.house_type,
             additional_condition=dto.additional_condition,
             university_name=dto.university_name,
+            roomcount=dto.roomcount,
+            bathroomcount=dto.bathroomcount,
+            is_near=dto.is_near,
+            aircon_yn=dto.aircon_yn,
+            washer_yn=dto.washer_yn,
+            fridge_yn=dto.fridge_yn,
+            max_building_age=dto.max_building_age,
             created_at=None,
             updated_at=None
         )
@@ -76,6 +83,13 @@ class CreateFinderRequestUseCase:
             house_type=created.house_type,
             additional_condition=created.additional_condition,
             university_name=created.university_name,
+            roomcount=created.roomcount,
+            bathroomcount=created.bathroomcount,
+            is_near=created.is_near,
+            aircon_yn=created.aircon_yn,
+            washer_yn=created.washer_yn,
+            fridge_yn=created.fridge_yn,
+            max_building_age=created.max_building_age,
             created_at=created.created_at,
             updated_at=created.updated_at
         )

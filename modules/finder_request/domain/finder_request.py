@@ -18,6 +18,13 @@ class FinderRequest:
     house_type: Optional[str] = None
     additional_condition: Optional[str] = None
     university_name: Optional[str] = None
+    roomcount: Optional[str] = None
+    bathroomcount: Optional[str] = None
+    is_near: bool = False
+    aircon_yn: str = "N"
+    washer_yn: str = "N"
+    fridge_yn: str = "N"
+    max_building_age: int = 5
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

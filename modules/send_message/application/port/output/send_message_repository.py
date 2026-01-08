@@ -22,3 +22,7 @@ class SendMessageRepository(ABC):
     @abstractmethod
     def find_by_house_and_request(self, house_platform_id: int, finder_request_id: int) -> Optional[SendMessage]:
         pass
+
+    @abstractmethod
+    def find_accepted_by_receiver_id(self, receiver_id: int) -> List[SendMessage]:
+        pass

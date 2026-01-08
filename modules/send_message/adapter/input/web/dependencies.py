@@ -4,6 +4,7 @@ from modules.send_message.application.usecase.create_send_message_usecase import
 from modules.send_message.application.usecase.get_send_message_usecase import GetSendMessageUseCase
 from modules.send_message.application.usecase.update_send_message_usecase import UpdateSendMessageUseCase
 from modules.send_message.application.usecase.update_accept_status_usecase import UpdateAcceptStatusUseCase
+from modules.send_message.application.usecase.get_accepted_proposals_usecase import GetAcceptedProposalsUseCase
 
 # External Dependencies
 from modules.abang_user.adapter.input.web.dependencies import get_abang_user_repository
@@ -62,3 +63,11 @@ def get_update_accept_status_usecase_dep(
     repo=Depends(get_send_message_repository)
 ) -> UpdateAcceptStatusUseCase:
     return UpdateAcceptStatusUseCase(repo)
+
+def get_get_accepted_proposals_usecase_dep(
+    repo=Depends(get_send_message_repository),
+    user_repo=Depends(get_abang_user_repository),
+    house_repo=Depends(get_house_platform_repository),
+    finder_repo=Depends(get_finder_request_repository)
+) -> GetAcceptedProposalsUseCase:
+    return GetAcceptedProposalsUseCase(repo, user_repo, house_repo, finder_repo)
