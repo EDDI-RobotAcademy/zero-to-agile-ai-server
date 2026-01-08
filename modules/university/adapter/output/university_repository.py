@@ -40,6 +40,7 @@ class UniversityRepository(UniversityRepositoryPort):
             )
             return [
                 UniversityLocationDTO(
+                    university_location_id=int(row.university_location_id),
                     university_name=row.university_name,
                     campus=row.campus,
                     lat=float(row.lat),
