@@ -1,5 +1,5 @@
 from infrastructure.db.postgres import SessionLocal
-from modules.house_platform.adapter.output.persistence.house_platform_repository_impl import HousePlatformRepositoryImpl
+from modules.house_platform.infrastructure.repository.house_platform_repository import HousePlatformRepository
 from modules.house_platform.application.usecase.create_house_platform_usecase import CreateHousePlatformUseCase
 from modules.house_platform.application.usecase.get_house_platform_usecase import GetHousePlatformUseCase
 from modules.house_platform.application.usecase.update_house_platform_usecase import UpdateHousePlatformUseCase
@@ -11,7 +11,7 @@ _house_platform_repo = None
 def get_house_platform_repository():
     global _house_platform_repo
     if _house_platform_repo is None:
-        _house_platform_repo = HousePlatformRepositoryImpl(SessionLocal)
+        _house_platform_repo = HousePlatformRepository(SessionLocal)
     return _house_platform_repo
 
 # UseCase Dependencies
