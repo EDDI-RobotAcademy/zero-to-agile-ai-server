@@ -2,7 +2,7 @@ from modules.send_message.application.port.output.send_message_repository import
 from modules.send_message.application.dto.send_message_dto import SendMessageCreateRequest
 from modules.send_message.domain.send_message import SendMessage
 from modules.abang_user.application.port.abang_user_repository_port import AbangUserRepositoryPort
-from modules.house_platform.application.port.output.house_platform_repository import HousePlatformRepository
+from modules.house_platform.application.port_out.house_platform_repository_port import HousePlatformRepositoryPort
 from modules.finder_request.adapter.output.repository.finder_request_repository import FinderRequestRepository
 
 class CreateSendMessageUseCase:
@@ -10,7 +10,7 @@ class CreateSendMessageUseCase:
         self, 
         repository: SendMessageRepository,
         user_repository: AbangUserRepositoryPort,
-        house_repository: HousePlatformRepository,
+        house_repository: HousePlatformRepositoryPort,
         finder_request_repository: FinderRequestRepository
     ):
         self.repository = repository

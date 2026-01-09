@@ -85,9 +85,6 @@ def update_message_content(
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
 
-    except PermissionError as e:
-        raise HTTPException(status_code=403, detail=str(e))
-
 @router.get(
     "/accepted",
     response_model=List[AcceptedProposalResponse],

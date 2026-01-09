@@ -37,9 +37,6 @@ def get_create_send_message_usecase():
 
 # Better approach for dependencies injection in FastAPI:
 from fastapi import Depends
-from modules.abang_user.application.port.abang_user_repository_port import AbangUserRepositoryPort
-from modules.house_platform.application.port.output.house_platform_repository import HousePlatformRepository
-from modules.finder_request.adapter.output.repository.finder_request_repository import FinderRequestRepository
 
 def get_create_send_message_usecase_dep(
     repo=Depends(get_send_message_repository),

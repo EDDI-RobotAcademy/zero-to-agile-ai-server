@@ -80,6 +80,10 @@ class SendMessageRepositoryImpl(SendMessageRepository):
     def find_by_house_and_request(self, house_platform_id: int, finder_request_id: int) -> Optional[SendMessage]:
         db: Session = self.db_session_factory()
         try:
+            orm = db.query(SendMessageORM).filter(
+                SendMessageORM.house_platform_id == house_platform_id,
+                SendMessageORM.finder_request_id == finder_request_id
+            ).first()
             if orm:
                 return self._to_domain(orm)
             return None
