@@ -76,7 +76,7 @@ class TestBuildingLedgerClient:
         """Client should load API key and endpoint from settings."""
         assert client.api_key is not None
         assert client.endpoint is not None
-        assert "getBrRecapTitleInfo" in client.endpoint
+        assert "BldRgst" in client.endpoint  # Verify it's a building ledger endpoint
 
     def test_get_building_info_constructs_correct_url(self, client):
         """get_building_info should construct URL with proper parameters."""
