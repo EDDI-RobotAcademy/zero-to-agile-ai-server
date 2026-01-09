@@ -9,15 +9,16 @@ from modules.mq.application.usecase.process_search_house_usecase import ProcessS
 import os
 from dotenv import load_dotenv
 from infrastructure.db.postgres import get_db_session  # Import DB session factory used by FastAPI router
-from modules.student_house.application.usecase.recommend_student_house_for_finder_request import (
-    RecommendStudentHouseUseCase,
-)
-from modules.student_house.adapter.output.recommendation_agent import (
-    StudentHouseRecommendationAgent,
-)
-from modules.student_house.infrastructure.repository.student_house_embedding_search_repository import \
-    StudentHouseEmbeddingSearchRepository
-from modules.student_house.infrastructure.repository.student_house_search_repository import StudentHouseSearchRepository
+# TODO: 추천 로직이 완성되면 student_house 기반 의존성을 다시 활성화한다.
+# from modules.student_house.application.usecase.recommend_student_house_for_finder_request import (
+#     RecommendStudentHouseUseCase,
+# )
+# from modules.student_house.adapter.output.recommendation_agent import (
+#     StudentHouseRecommendationAgent,
+# )
+# from modules.student_house.infrastructure.repository.student_house_embedding_search_repository import \
+#     StudentHouseEmbeddingSearchRepository
+# from modules.student_house.infrastructure.repository.student_house_search_repository import StudentHouseSearchRepository
 
 
 load_dotenv()
@@ -65,29 +66,29 @@ def start_search_house_consumer():
         db = next(get_db_session())
 
         # 의존성 생성 (router와 동일)
-        finder_request_repo = FinderRequestRepository(db)
-        embedding_repo = FinderRequestEmbeddingRepository()
-        search_repo = StudentHouseSearchRepository()
-        vector_repo = StudentHouseEmbeddingSearchRepository()
-        embedder = OpenAIEmbeddingAgent()
+        # finder_request_repo = FinderRequestRepository(db)
+        # embedding_repo = FinderRequestEmbeddingRepository()
+        # search_repo = StudentHouseSearchRepository()
+        # vector_repo = StudentHouseEmbeddingSearchRepository()
+        # embedder = OpenAIEmbeddingAgent()
+        #
+        # usecase = RecommendStudentHouseUseCase(
+        #     finder_request_repo,
+        #     embedding_repo,
+        #     search_repo,
+        #     vector_repo,
+        #     embedder,
+        # )
 
-        usecase = RecommendStudentHouseUseCase(
-            finder_request_repo,
-            embedding_repo,
-            search_repo,
-            vector_repo,
-            embedder,
-        )
 
+        # print(f"[Consumer] before b-logic search_house_id={search_house_id}")
+        # ai_agent = StudentHouseRecommendationAgent(usecase)
+        # print(f"[Consumer] after b-logic search_house_id={search_house_id}")
 
-        print(f"[Consumer] before b-logic search_house_id={search_house_id}")
-        ai_agent = StudentHouseRecommendationAgent(usecase)
-        print(f"[Consumer] after b-logic search_house_id={search_house_id}")
-
-        usecase = ProcessSearchHouseUseCase(db, ai_agent)
+        # usecase = ProcessSearchHouseUseCase(db, ai_agent)
 
         try:
-            usecase.execute(search_house_id)
+            # usecase.execute(search_house_id)
             # 모든 처리가 끝났을 때 ACK
             ch.basic_ack(delivery_tag=method.delivery_tag)
 

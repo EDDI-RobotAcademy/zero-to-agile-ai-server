@@ -406,6 +406,7 @@ pyrightconfig.json
 
 # exclude
 *.pdf
+*.xlsx
 
 # exclude .json
 *.json

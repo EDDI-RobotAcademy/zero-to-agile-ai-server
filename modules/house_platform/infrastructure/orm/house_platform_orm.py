@@ -31,8 +31,7 @@ class HousePlatformORM(Base):
     deposit = Column(BigInteger, nullable=True, comment="보증금")
     abang_user_id = Column(
         BigInteger,
-        nullable=False,
-        server_default=text("-1"),
+        nullable=True,
         comment="등록 사용자 ID",
     )
     created_at = Column(

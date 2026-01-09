@@ -13,3 +13,4 @@ pydantic-settings
 pytest
 pika
 pgvector
+starlette
