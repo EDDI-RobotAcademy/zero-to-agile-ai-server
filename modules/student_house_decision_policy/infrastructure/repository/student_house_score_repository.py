@@ -149,6 +149,31 @@ class StudentHouseScoreRepository(StudentHouseScorePort):
             else:
                 session.close()
 
+    def fetch_by_house_platform_ids(
+        self,
+        house_platform_ids: Sequence[int],
+        policy_version: str | None = None,
+    ) -> Sequence[StudentHouseScoreSummary]:
+        """매물 ID 목록으로 점수 요약을 조회한다."""
+        if not house_platform_ids:
+            return []
+        session, generator = open_session(self._session_factory)
+        try:
+            query = session.query(StudentHouseORM).filter(
+                StudentHouseORM.house_platform_id.in_(house_platform_ids)
+            )
+            if policy_version:
+                query = query.filter(
+                    StudentHouseORM.policy_version == policy_version
+                )
+            rows = query.all()
+            return [self._to_summary(row) for row in rows]
+        finally:
+            if generator:
+                generator.close()
+            else:
+                session.close()
+
     @staticmethod
     def _apply_score(
         target: StudentHouseORM, score: StudentHouseScoreRecord
