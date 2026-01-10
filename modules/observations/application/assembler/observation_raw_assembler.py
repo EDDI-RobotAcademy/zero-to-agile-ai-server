@@ -1,5 +1,8 @@
+from typing import Iterable
+
 from modules.house_platform.application.dto.house_platform_dto import HousePlatformUpsertModel, \
     HousePlatformOptionUpsertModel
+from modules.observations.domain.model.distance_feature_observation import DistanceFeatureObservation
 
 
 class ObservationRawAssembler:
@@ -37,16 +40,41 @@ class ObservationRawAssembler:
         }
 
     @staticmethod
-    def build_distance_raw(
-            minutes_to_school: float,
-            distance_bucket: str,
-            distance_percentile: float,
-    ) -> dict:
+    def empty_convenience_raw() -> dict:
+        """
+        House 옵션이 없을 때 사용.
+        필수 옵션 커버리지와 편의 점수를 0으로 반환.
+        """
         return {
-            "minutes_to_school": minutes_to_school,
-            "distance_bucket": distance_bucket,
-            "distance_percentile": distance_percentile,
-            "nonlinear_distance_score": 1 / (1 + minutes_to_school),
+            "essential_option_coverage": 0.0,
+            "convenience_score": 0.0,
+        }
+
+    @staticmethod
+    def build_distance_summary_raw(
+            distances: Iterable[DistanceFeatureObservation],
+    ) -> dict:
+        """
+        614개 DistanceObservation 중
+        FeatureObservation에 들어갈 대표 요약값 생성
+        """
+
+        if not distances:
+            return {
+                "minutes_to_school": None,
+                "distance_bucket": "UNKNOWN",
+                "distance_percentile": None,
+                "nonlinear_distance_score": None,
+            }
+
+        # 최소 이동 시간 기준
+        closest = min(distances, key=lambda d: d.학교까지_분)
+
+        return {
+            "minutes_to_school": closest.학교까지_분,
+            "distance_bucket": closest.거리_버킷,
+            "distance_percentile": closest.거리_백분위,
+            "nonlinear_distance_score": closest.거리_비선형_점수,
         }
 
     @staticmethod
