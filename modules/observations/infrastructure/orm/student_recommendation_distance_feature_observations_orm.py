@@ -7,8 +7,13 @@ Base = declarative_base()
 class StudentRecommendationDistanceObservationORM(Base):
     __tablename__ = "student_recommendation_distance_observations"
 
-    id = Column(BigInteger, primary_key=True)
-    house_platform_id = Column(BigInteger, nullable=False)  # FK
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+
+    recommendation_observation_id = Column(
+        BigInteger,
+        nullable=False,
+        index=True
+    )
     university_id = Column(BigInteger, nullable=False)     # FK
 
     학교까지_분 = Column(Float, nullable=False)
