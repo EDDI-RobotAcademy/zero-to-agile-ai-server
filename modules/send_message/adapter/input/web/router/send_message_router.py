@@ -85,9 +85,6 @@ def update_message_content(
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
 
-    except PermissionError as e:
-        raise HTTPException(status_code=403, detail=str(e))
-
 @router.get(
     "/accepted",
     response_model=List[AcceptedProposalResponse],
@@ -99,3 +96,44 @@ def get_accepted_proposals(
     usecase: GetAcceptedProposalsUseCase = Depends(get_get_accepted_proposals_usecase_dep)
 ):
     return usecase.execute(abang_user_id)
+
+@router.put(
+    "/status",
+    response_model=SendMessageResponse,
+    summary="제안 수락/거절 상태 변경",
+    description="받은 제안의 상태를 변경합니다. (수락: 'Y', 거절: 'N', 대기: 'W'). 수신자만 가능합니다."
+)
+def update_accept_status(
+    request: AcceptStatusUpdateRequest,
+    abang_user_id: int = Depends(auth_required),
+    usecase: UpdateAcceptStatusUseCase = Depends(get_update_accept_status_usecase_dep)
+):
+    try:
+        return usecase.execute(abang_user_id, request.send_message_id, request)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+@router.delete(
+    "/{send_message_id}",
+    response_model=SendMessageResponse,
+    summary="받은 제안 삭제 (Soft Delete)",
+    description="받은 제안을 삭제(상태를 'D'로 변경)합니다. 수신자만 가능합니다."
+)
+def delete_received_message(
+    send_message_id: int,
+    abang_user_id: int = Depends(auth_required),
+    usecase: UpdateAcceptStatusUseCase = Depends(get_update_accept_status_usecase_dep)
+):
+    try:
+        # 'D' 상태로 변경하기 위한 요청 객체 생성
+        request = AcceptStatusUpdateRequest(
+            send_message_id=send_message_id,
+            accept_type='D'
+        )
+        return usecase.execute(abang_user_id, send_message_id, request)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))

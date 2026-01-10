@@ -4,7 +4,7 @@ from modules.send_message.application.port.output.send_message_repository import
 from modules.send_message.application.dto.accepted_proposal_dto import AcceptedProposalDTO
 
 from modules.abang_user.application.port.abang_user_repository_port import AbangUserRepositoryPort
-from modules.house_platform.application.port.output.house_platform_repository import HousePlatformRepository
+from modules.house_platform.application.port_out.house_platform_repository_port import HousePlatformRepositoryPort
 from modules.finder_request.application.port.finder_request_repository_port import FinderRequestRepositoryPort
 
 class GetAcceptedProposalsUseCase:
@@ -12,7 +12,7 @@ class GetAcceptedProposalsUseCase:
         self,
         send_message_repository: SendMessageRepository,
         abang_user_repository: AbangUserRepositoryPort,
-        house_platform_repository: HousePlatformRepository,
+        house_platform_repository: HousePlatformRepositoryPort,
         finder_request_repository: FinderRequestRepositoryPort
     ):
         self.send_message_repository = send_message_repository
