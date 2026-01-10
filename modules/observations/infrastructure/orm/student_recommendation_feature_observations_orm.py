@@ -7,6 +7,8 @@ Base = declarative_base()
 class StudentRecommendationFeatureObservationORM(Base):
     __tablename__ = "student_recommendation_feature_observations"
 
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+
     # 매물 식별
     house_platform_id = Column(BigInteger, primary_key=True, nullable=False)
     snapshot_id = Column(String, nullable=False)
@@ -17,12 +19,6 @@ class StudentRecommendationFeatureObservationORM(Base):
     estimated_move_in_cost = Column(BigInteger, nullable=False)
     monthly_cost_est = Column(BigInteger, nullable=False)
     price_burden_nonlinear = Column(Float, nullable=False)
-
-    # 거리 관련
-    distance_to_school_min = Column(Float, nullable=False)
-    distance_percentile = Column(Float, nullable=False)
-    distance_bucket = Column(String(20), nullable=False)
-    distance_nonlinear_score = Column(Float, nullable=False)
 
     # 위험 관련
     risk_event_count = Column(Integer, nullable=False)

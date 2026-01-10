@@ -13,6 +13,7 @@ from modules.observations.domain.value_objects.risk_observation_features import 
 
 def test_observation_creation():
     observation = StudentRecommendationFeatureObservation(
+        id=None,
         platform_id=1,
         snapshot_id="snap-001",
         가격_관측치=PriceObservationFeatures(
@@ -21,12 +22,6 @@ def test_observation_creation():
             예상_입주비용=300_000,
             월_비용_추정=1200,
             가격_부담_비선형=0.4
-        ),
-        거리_관측치=DistanceObservationFeatures(
-            학교까지_분=12.0,
-            거리_백분위=0.6,
-            거리_버킷="mid",
-            거리_비선형_점수=0.5
         ),
         위험_관측치=RiskObservationFeatures(
             위험_사건_개수=1,
@@ -47,6 +42,10 @@ def test_observation_creation():
         calculated_at=datetime.now(timezone.utc)
     )
 
+    # 검증
     assert observation.platform_id == 1
     assert observation.snapshot_id == "snap-001"
     assert observation.가격_관측치.가격_백분위 == 0.7
+    assert observation.위험_관측치.위험_사건_개수 == 1
+    assert observation.편의_관측치.편의_점수 == 0.85
+    assert observation.메타데이터.관측치_버전 == "v1"

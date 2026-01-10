@@ -1,4 +1,3 @@
-
 from modules.house_platform.application.dto.house_platform_dto import (
     HousePlatformUpsertModel,
     HousePlatformOptionUpsertModel,
@@ -23,6 +22,7 @@ def test_build_price_raw():
 
 
 def test_build_convenience_raw():
+    # 옵션이 있는 경우
     options = HousePlatformOptionUpsertModel(
         built_in=True,
         near_univ=True,
@@ -35,18 +35,6 @@ def test_build_convenience_raw():
     assert result["essential_option_coverage"] == 0.5
     assert result["convenience_score"] == 0.5
 
-
-def test_build_distance_raw():
-    result = ObservationRawAssembler.build_distance_raw(
-        minutes_to_school=9,
-        distance_bucket="5-10",
-        distance_percentile=0.7,
-    )
-
-    assert result["minutes_to_school"] == 9
-    assert result["distance_bucket"] == "5-10"
-    assert result["distance_percentile"] == 0.7
-    assert result["nonlinear_distance_score"] == 1 / 10
 
 def test_build_risk_raw():
     house = HousePlatformUpsertModel(

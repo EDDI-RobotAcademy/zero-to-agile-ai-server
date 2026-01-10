@@ -1,5 +1,6 @@
 import pytest
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from modules.observations.application.usecase.generate_distance_observation_usecase import (
     GenerateDistanceObservationUseCase,
@@ -7,10 +8,7 @@ from modules.observations.application.usecase.generate_distance_observation_usec
 from modules.observations.domain.model.distance_feature_observation import DistanceFeatureObservation
 
 
-# =========================
-# Fake / Stub Models
-# =========================
-
+# ---------- Fake / Stub Models ----------
 @dataclass
 class FakeHouse:
     lat_lng: dict
@@ -28,20 +26,16 @@ class FakeUniversity:
     lng: float
 
 
-# =========================
-# Fake Repositories
-# =========================
-
+# ---------- Fake Repositories ----------
 class FakeDistanceObservationRepository:
+    """UseCase와 동일 시그니처로 수정: 단일 observations 인자 받음"""
     def __init__(self):
         self.called = False
-        self.house_id = None
-        self.distances = None
+        self.observations = None
 
-    def save_bulk(self, house_id: int, distances: list[DistanceFeatureObservation]):
+    def save_bulk(self, observations: list[DistanceFeatureObservation]):
         self.called = True
-        self.house_id = house_id
-        self.distances = distances
+        self.observations = observations
 
 
 class FakeHousePlatformRepository:
@@ -62,10 +56,7 @@ class FakeUniversityRepository:
         ]
 
 
-# =========================
-# Test
-# =========================
-
+# ---------- Test ----------
 def test_generate_distance_observation_usecase():
     # given
     distance_repo = FakeDistanceObservationRepository()
@@ -73,20 +64,20 @@ def test_generate_distance_observation_usecase():
     university_repo = FakeUniversityRepository()
 
     usecase = GenerateDistanceObservationUseCase(
-        distance_observation_repo=distance_repo,
-        raw_house_repo=house_repo,
+        distance_repo=distance_repo,
+        house_repo=house_repo,
         university_repo=university_repo,
     )
 
     # when
-    usecase.execute(house_id=123)
+    usecase.execute(recommendation_observation_id=999, house_id=123)
 
     # then
     assert distance_repo.called is True
-    assert distance_repo.house_id == 123
-    assert len(distance_repo.distances) == 3
+    assert len(distance_repo.observations) == 3
 
-    for obs in distance_repo.distances:
+    for obs in distance_repo.observations:
+        # 기본 값 체크
         assert obs.학교까지_분 > 0
         assert 0 <= obs.거리_백분위 <= 1
         assert obs.거리_버킷 in {

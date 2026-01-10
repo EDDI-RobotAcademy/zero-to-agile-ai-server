@@ -1,3 +1,4 @@
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Optional
@@ -13,14 +14,18 @@ from modules.observations.domain.value_objects.risk_observation_features import 
 
 @dataclass
 class StudentRecommendationFeatureObservation:
+    id: Optional[int]
+
     platform_id: int
     snapshot_id: str
+
     가격_관측치: PriceObservationFeatures
-    거리_관측치: DistanceObservationFeatures
     위험_관측치: RiskObservationFeatures
     편의_관측치: ConvenienceObservationFeatures
+
     관측_메모: ObservationNotes
     메타데이터: ObservationMetadata
+
     calculated_at: Optional[datetime] = field(default_factory=datetime.now(timezone.utc))
 
     # @classmethod
