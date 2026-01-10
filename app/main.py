@@ -6,27 +6,10 @@ from dotenv import load_dotenv
 # ✨ 이 줄 추가
 from modules.auth.adapter.input.web.auth_router import router as auth_router
 from modules.finder_request.adapter.input.web.router.finder_request_router import router as finder_request_router
-from modules.ai_explaination.adapter.input.web.router.chatbot import router as chatbot_router
+#from modules.chatbot.adapter.input.web.router.chatbot import router as chatbot_router
 from modules.mq.adapter.input.web.router.search_house_router import router as search_house_router
-# TODO: 추천 로직이 완성되면 student_house 라우터를 다시 활성화한다.
-# from modules.student_house.adapter.input.web.router.student_house_router import (
-#     router as student_house_router,
-# )
-from modules.house_analysis.adapter.input.web.router.house_analysis_router import (
-    router as house_analysis_router,
-)
+from modules.utils.address_autocomplete.router.address_autocomplete_router import router as address_autocomplete
 
-from modules.chatbot.adapter.input.web.router.chat_router import router as chat_router
-from modules.abang_user.adapter.input.web.router.abang_user_router import router as abang_user_router
-from modules.university.adapter.input.web.router.university_router import router as university_router
-from modules.house_platform.adapter.input.web.router.house_platform_router import router as house_platform_router
-from modules.send_message.adapter.input.web.router.send_message_router import router as send_message_router
-from modules.owner_recommendation.adapter.input.web.router.owner_recommendation_router import (
-    router as owner_recommendation_router,
-)
-from modules.recommendations.adapter.input.web.router.recommendations_router import (
-    router as recommendations_router,
-)
 
 load_dotenv()
 app = FastAPI()
@@ -53,40 +36,19 @@ api_router.include_router(search_house_router)
 
 # ✅ finder_request_router를 api_router 아래에 등록 (/api + /requests = /api/requests)
 api_router.include_router(finder_request_router)
+api_router.include_router(address_autocomplete)
 
-# ✅ chatbot_router를 api_router 아래에 등록 (/api + /ai_explaination = /api/ai_explaination)
-api_router.include_router(chatbot_router)
+# ✅ chatbot_router를 api_router 아래에 등록 (/api + /chatbot = /api/chatbot)
+#api_router.include_router(chatbot_router)
 
 # ✅ student_house_router를 api_router 아래에 등록 (/api + /student_house = /api/student_house)
-# TODO: 추천 로직이 완성되면 라우터 등록을 복구한다.
-# api_router.include_router(student_house_router)
-
-# ✅ chat_router를 api_router 아래에 등록 (/api + /chatbot = /api/chatbot)
-api_router.include_router(chat_router)
-
-# ✅ abang_user_router를 api_router 아래에 등록 (/api + /users = /api/users)
-api_router.include_router(abang_user_router)
-
-# ✅ university_router를 api_router 아래에 등록 (/api + /universities = /api/universities)
-api_router.include_router(university_router)
-
-# ✅ house_platform_router를 api_router 아래에 등록 (/api + /house_platforms = /api/house_platforms)
-api_router.include_router(house_platform_router)
-
-# ✅ send_message_router를 api_router 아래에 등록 (/api + /messages = /api/messages)
-api_router.include_router(send_message_router)
-
-# ✅ owner_recommendation_router를 api_router 아래에 등록 (/api + /owner_recommendations = /api/owner_recommendations)
-api_router.include_router(owner_recommendation_router)
+#api_router.include_router(student_house_router)
 
 # ✅ recommendations_router를 api_router 아래에 등록 (/api + /recommend = /api/recommend)
 api_router.include_router(recommendations_router)
 
 # 등록한 /api 라우터를 메인 앱에 연결합니다.
 app.include_router(api_router)
-
-# house_analysis_router는 자체적으로 /api prefix를 포함하므로 직접 등록합니다.
-app.include_router(house_analysis_router)
 
 if __name__ == "__main__":
     import uvicorn
