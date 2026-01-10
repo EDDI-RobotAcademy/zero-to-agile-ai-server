@@ -44,6 +44,9 @@ api_router.include_router(address_autocomplete)
 # ✅ student_house_router를 api_router 아래에 등록 (/api + /student_house = /api/student_house)
 #api_router.include_router(student_house_router)
 
+# ✅ recommendations_router를 api_router 아래에 등록 (/api + /recommend = /api/recommend)
+api_router.include_router(recommendations_router)
+
 # 등록한 /api 라우터를 메인 앱에 연결합니다.
 app.include_router(api_router)
 
