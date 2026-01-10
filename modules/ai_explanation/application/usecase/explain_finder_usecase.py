@@ -1,6 +1,7 @@
 from modules.ai_explanation.application.port.llm_port import LLMPort
 from modules.ai_explanation.adapter.output.llm_adapter import LLMAdapter
 from modules.ai_explanation.adapter.input.web.response.ai_response import AiResponse
+from modules.ai_explanation.domain.tone import ChatTone
 
 class ExplainFinderUseCase:
     def __init__(self, llm_port: LLMPort = None):
@@ -11,6 +12,6 @@ class ExplainFinderUseCase:
         explanation = self.llm_port.generate_finder_explanation(
             items=request.recommendations,
             user_message=request.message,
-            tone=request.tone
+            tone=ChatTone.FORMAL
         )
         return AiResponse(message=explanation)

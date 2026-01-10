@@ -1,7 +1,7 @@
 from typing import List, Optional, Union, Sequence
 from pydantic import BaseModel, Field
 from modules.ai_explanation.domain.tone import ChatTone
-
+# todo: 요청값 결과에 따라 수정 필요
 # 매물 정보 (기존 RecommendationItem 재사용 또는 재정의)
 class HouseItem(BaseModel):
     item_id: Union[int, str]
