@@ -37,11 +37,12 @@ class RecommendStudentHouseResult:
 
 @dataclass(frozen=True)
 class RecommendStudentHouseMockResponse:
-    """추천 실패 시 임시 응답을 만든다."""
+    """추천 임시 응답을 만든다."""
 
     finder_request_id: int
     recommended_top_k: list[dict[str, Any]]
     rejected_top_k: list[dict[str, Any]]
+    total_candidates: int
     query_context: dict[str, Any] | None = None
 
     def to_result(self) -> RecommendStudentHouseResult:
@@ -50,12 +51,11 @@ class RecommendStudentHouseMockResponse:
         return RecommendStudentHouseResult(
             finder_request_id=self.finder_request_id,
             generated_at=datetime.now(timezone.utc).isoformat(),
-            status="FAILED",
+            status="SUCCESS",
             detail=None,
             query_context=query_context,
             summary={
-                "total_candidates": len(self.recommended_top_k)
-                + len(self.rejected_top_k),
+                "total_candidates": self.total_candidates,
                 "recommended_count": len(self.recommended_top_k),
                 "rejected_count": len(self.rejected_top_k),
                 "top_k": len(self.recommended_top_k),
