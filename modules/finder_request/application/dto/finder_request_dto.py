@@ -46,3 +46,4 @@ class FinderRequestDTO:
     max_building_age: int = 5
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    phone_number: Optional[str] = None

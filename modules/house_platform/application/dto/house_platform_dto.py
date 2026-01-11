@@ -154,6 +154,7 @@ class HousePlatformResponse(BaseModel):
     abang_user_id: int
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
+    phone_number: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -157,17 +157,22 @@ def view_finder_requests(
 )
 def get_finder_request_detail(
     finder_request_id: int,
+    abang_user_id: int = Depends(auth_required),
     usecase: GetFinderRequestDetailUseCase = Depends(get_finder_request_detail_usecase)
 ):
     """
     요구서의 상세 정보를 조회합니다.
     
     - **finder_request_id**: 요구서 ID (path parameter)
+    - **abang_user_id**: 조회자 ID (권한 확인용)
     """
     try:
-        # UseCase 실행
-        result = usecase.execute(finder_request_id)
+        # UseCase 실행 (viewer_id 전달)
+        result = usecase.execute(finder_request_id, abang_user_id)
         
+        if not result:
+             raise HTTPException(status_code=404, detail="Finder request not found")
+
         # Application DTO → Web Response DTO 변환
         return FinderRequestResponse(
             finder_request_id=result.finder_request_id,
@@ -188,7 +193,8 @@ def get_finder_request_detail(
             fridge_yn=result.fridge_yn,
             max_building_age=result.max_building_age,
             created_at=result.created_at,
-            updated_at=result.updated_at
+            updated_at=result.updated_at,
+            phone_number=result.phone_number
         )
     except HTTPException:
         raise

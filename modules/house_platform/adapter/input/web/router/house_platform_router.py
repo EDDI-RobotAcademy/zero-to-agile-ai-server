@@ -56,9 +56,14 @@ def get_house_platform(
     abang_user_id: int = Depends(auth_required), # Assuming authentication is required even for viewing details for now, or to check ownership if needed in future logic
     usecase: GetHousePlatformUseCase = Depends(get_get_house_platform_usecase)
 ):
-    house = usecase.execute_get_by_id(house_platform_id)
+    # viewer_id 전달
+    house = usecase.execute_get_by_id(house_platform_id, abang_user_id)
     if not house:
         raise HTTPException(status_code=404, detail="House platform not found")
+    
+    # 동적 속성(phone_number)을 Pydantic 모델에 반영하기 위해 dict로 변환하거나, 
+    # Pydantic의 from_attributes가 객체의 속성을 읽어올 때 getattr를 사용하므로 
+    # 동적으로 추가된 속성도 읽어올 수 있음.
     return house
 
 @router.put(

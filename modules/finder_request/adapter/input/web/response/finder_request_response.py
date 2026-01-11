@@ -27,6 +27,7 @@ class FinderRequestResponse(BaseModel):
     max_building_age: int = Field(..., description="최대 건축 연한")
     created_at: Optional[datetime] = Field(None, description="생성 시각")
     updated_at: Optional[datetime] = Field(None, description="수정 시각")
+    phone_number: Optional[str] = Field(None, description="작성자 전화번호 (권한 있는 사용자에게만 표시)")
     
     class Config:
         from_attributes = True
