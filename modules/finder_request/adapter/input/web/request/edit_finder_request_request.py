@@ -9,9 +9,13 @@ class EditFinderRequestRequest(BaseModel):
     finder_request_id: int = Field(..., description="수정할 요구서 ID", gt=0)
     preferred_region: Optional[str] = Field(None, description="선호 지역", max_length=255)
     # ⭐ 가격 유형 (NULL 허용)
-    price_type: Optional[Literal["JEONSE", "MONTHLY", "MIXED", "ETC"]] = Field(
+    # price_type: Optional[Literal["JEONSE", "MONTHLY", "MIXED", "ETC"]] = Field(
+    #     None,
+    #     description="가격 유형 (JEONSE / MONTHLY / MIXED / ETC)"
+    # )
+    price_type: Optional[str] = Field(
         None,
-        description="가격 유형 (JEONSE / MONTHLY / MIXED / ETC)"
+        description="가격 유형 (전세 / 월세 / 매매)"
     )
     max_deposit: Optional[int] = Field(None, description="최대 보증금")
     max_rent: Optional[int] = Field(None, description="최대 월세")

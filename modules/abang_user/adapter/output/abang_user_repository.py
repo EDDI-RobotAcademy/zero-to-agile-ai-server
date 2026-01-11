@@ -54,120 +54,120 @@ class AbangUserRepository(AbangUserRepositoryPort):
         finally:
             db.close()
 
-        def find_by_id(self, user_id: int) -> Optional[AppUser]:
+    def find_by_id(self, user_id: int) -> Optional[AppUser]:
 
-            db: Session = self.db_session_factory()
+        db: Session = self.db_session_factory()
 
-            try:
+        try:
 
-                user: Optional[AbangUser] = db.query(AbangUser).filter(
+            user: Optional[AbangUser] = db.query(AbangUser).filter(
 
-                    AbangUser.abang_user_id == user_id
+                AbangUser.abang_user_id == user_id
 
-                ).first()
+            ).first()
 
-                
 
-                if not user:
 
-                    return None
+            if not user:
 
-                
+                return None
 
-                return AppUser(
 
-                    user_id=user.abang_user_id,
 
-                    name="", # DB에 name 컬럼이 없음, 로직에 따라 처리 필요
+            return AppUser(
 
-                    nickname=user.nickname,
+                user_id=user.abang_user_id,
 
-                    phone_number=user.phone_number,
+                name="", # DB에 name 컬럼이 없음, 로직에 따라 처리 필요
 
-                    university_name=user.university_name,
+                nickname=user.nickname,
 
-                    email=user.email,
+                phone_number=user.phone_number,
 
-                    signup_type="GOOGLE", # 임시, DB에 없음
+                university_name=user.university_name,
 
-                    user_type=user.user_type,
+                email=user.email,
 
-                    first_create_dt=user.created_at,
+                signup_type="GOOGLE", # 임시, DB에 없음
 
-                    last_update_dt=user.updated_at
+                user_type=user.user_type,
 
-                )
+                first_create_dt=user.created_at,
 
-            finally:
+                last_update_dt=user.updated_at
 
-                db.close()
+            )
 
-                
+        finally:
 
-        def update(self, user: AppUser) -> Optional[AppUser]:
+            db.close()
 
-            db: Session = self.db_session_factory()
 
-            try:
 
-                user_model: Optional[AbangUser] = db.query(AbangUser).filter(
+    def update(self, user: AppUser) -> Optional[AppUser]:
 
-                    AbangUser.abang_user_id == user.user_id
+        db: Session = self.db_session_factory()
 
-                ).first()
+        try:
 
-                
+            user_model: Optional[AbangUser] = db.query(AbangUser).filter(
 
-                if not user_model:
+                AbangUser.abang_user_id == user.user_id
 
-                    return None
+            ).first()
 
-                    
 
-                # Update fields
 
-                if user.phone_number:
+            if not user_model:
 
-                    user_model.phone_number = user.phone_number
+                return None
 
-                if user.university_name:
 
-                    user_model.university_name = user.university_name
 
-                    
+            # Update fields
 
-                db.commit()
+            if user.phone_number:
 
-                db.refresh(user_model)
+                user_model.phone_number = user.phone_number
 
-                
+            if user.university_name:
 
-                return AppUser(
+                user_model.university_name = user.university_name
 
-                    user_id=user_model.abang_user_id,
 
-                    name="", 
 
-                    nickname=user_model.nickname,
+            db.commit()
 
-                    phone_number=user_model.phone_number,
+            db.refresh(user_model)
 
-                    university_name=user_model.university_name,
 
-                    email=user_model.email,
 
-                    signup_type="GOOGLE",
+            return AppUser(
 
-                    user_type=user_model.user_type,
+                user_id=user_model.abang_user_id,
 
-                    first_create_dt=user_model.created_at,
+                name="",
 
-                    last_update_dt=user_model.updated_at
+                nickname=user_model.nickname,
 
-                )
+                phone_number=user_model.phone_number,
 
-            finally:
+                university_name=user_model.university_name,
 
-                db.close()
+                email=user_model.email,
+
+                signup_type="GOOGLE",
+
+                user_type=user_model.user_type,
+
+                first_create_dt=user_model.created_at,
+
+                last_update_dt=user_model.updated_at
+
+            )
+
+        finally:
+
+            db.close()
 
     

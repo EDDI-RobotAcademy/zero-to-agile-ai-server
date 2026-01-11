@@ -72,7 +72,12 @@ class SendMessageRepositoryImpl(SendMessageRepository):
     def find_by_receiver_id(self, receiver_id: int) -> List[SendMessage]:
         db: Session = self.db_session_factory()
         try:
-            orms = db.query(SendMessageORM).filter(SendMessageORM.receiver_id == receiver_id).all()
+            orms = (
+                db.query(SendMessageORM)
+                .filter(
+                    SendMessageORM.receiver_id == receiver_id,
+                    SendMessageORM.accept_type != 'D'  # D 제외
+                ).all())
             return [self._to_domain(orm) for orm in orms]
         finally:
             db.close()

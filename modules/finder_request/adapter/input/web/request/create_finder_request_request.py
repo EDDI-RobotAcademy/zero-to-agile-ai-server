@@ -9,7 +9,11 @@ class CreateFinderRequestRequest(BaseModel):
     """
     preferred_region: Optional[str] = Field(None, description="선호 지역", max_length=255)
     # ⭐ 가격 유형 (NULL 허용)
-    price_type: Optional[Literal["JEONSE", "MONTHLY", "MIXED", "ETC"]] = Field(None,description="가격 유형 (JEONSE / MONTHLY / MIXED / ETC)")
+    # price_type: Optional[Literal["JEONSE", "MONTHLY", "MIXED", "ETC"]] = Field(None,description="가격 유형 (JEONSE / MONTHLY / MIXED / ETC)")
+    price_type: Optional[str] = Field(
+        None,
+        description="가격 유형 (전세 / 월세 / 매매)"
+    )
     max_deposit: Optional[int] = Field(None, description="최대 보증금")
     max_rent: Optional[int] = Field(None, description="최대 월세")
     house_type: Optional[str] = Field(None, description="주거 형태 (예: 원룸, 투룸, 오피스텔 등)")

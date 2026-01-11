@@ -55,7 +55,8 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
             # ORM 모델 → 도메인 모델 변환
             return self._to_domain(model)
         finally:
-            self.db.close()
+            pass
+            # self.db.close()
     
     def find_by_id(self, finder_request_id: int) -> Optional[FinderRequest]:
         """
@@ -107,10 +108,10 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
     def find_by_user_id(self, abang_user_id: int) -> List[FinderRequest]:
         """
         사용자 ID로 요구서 목록 조회 (모든 status 포함)
-        
+
         Args:
             abang_user_id: 임차인 사용자 ID
-            
+
         Returns:
             요구서 도메인 모델 리스트
         """
@@ -119,18 +120,19 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
             models = self.db.query(FinderRequestModel).filter(
                 FinderRequestModel.abang_user_id == abang_user_id
             ).order_by(FinderRequestModel.created_at.desc()).all()
-            
+
             return [self._to_domain(model) for model in models]
         finally:
-            self.db.close()
+            pass
+            #self.db.close()
     
     def update(self, finder_request: FinderRequest) -> Optional[FinderRequest]:
         """
         요구서 수정
-        
+
         Args:
             finder_request: 수정할 요구서 도메인 모델 (ID 포함)
-            
+
         Returns:
             수정된 요구서 또는 None (존재하지 않는 경우)
         """
@@ -180,7 +182,8 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
 
             return self._to_domain(model)
         finally:
-            self.db.close()
+            pass
+            #self.db.close()
     
     def delete(self, finder_request_id: int) -> bool:
         """
@@ -232,7 +235,7 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
             
             print(f"✅ [HARD DELETE] 삭제 성공: finder_request_id={finder_request_id} row가 완전히 제거됨")
             return True
-            
+
         except Exception as e:
             # ✅ 예외 발생 시 롤백 및 실패 반환
             print(f"❌ [HARD DELETE] 예외 발생: {type(e).__name__}: {str(e)}")
@@ -241,4 +244,5 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
             self.db.rollback()
             return False
         finally:
-            self.db.close()
+            pass
+            #self.db.close()
