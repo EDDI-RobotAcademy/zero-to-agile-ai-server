@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 
 @dataclass(frozen=True)
@@ -28,10 +28,11 @@ class RiskObservationFeatures:
 
     @classmethod
     def from_raw(cls, raw: Dict) -> "RiskObservationFeatures":
+        # 테스트용/미완성 데이터 처리: 없으면 기본값
         return cls(
-            위험_사건_개수=raw["risk_event_count"],
-            위험_사건_유형=raw["risk_event_types"],
-            위험_확률_추정=raw["risk_probability_est"],
-            위험_심각도_점수=raw["risk_severity_score"],
-            위험_비선형_패널티=raw["risk_nonlinear_penalty"],
+            위험_사건_개수=raw.get("risk_event_count", 0),
+            위험_사건_유형=raw.get("risk_event_types", []),
+            위험_확률_추정=raw.get("risk_probability_est", 0.0),
+            위험_심각도_점수=raw.get("risk_severity_score", 0.0),
+            위험_비선형_패널티=raw.get("risk_nonlinear_penalty", 0.0),
         )
