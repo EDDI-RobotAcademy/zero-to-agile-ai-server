@@ -2,9 +2,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 from modules.finder_request.domain.finder_request import FinderRequest
+from modules.observations.application.port.distance_observation_repository_port import (
+    DistanceObservationRepositoryPort,
+)
+from modules.observations.application.port.price_observation_repository_port import (
+    PriceObservationRepositoryPort,
+)
+from modules.observations.domain.model.distance_feature_observation import (
+    DistanceFeatureObservation,
+)
+from modules.observations.domain.model.price_feature_observation import (
+    PriceFeatureObservation,
+)
 from modules.student_house_decision_policy.application.dto.candidate_filter_dto import (
     FilterCandidate,
     FilterCandidateCommand,
@@ -28,6 +40,12 @@ from modules.student_house_decision_policy.domain.value_object.decision_policy_c
 )
 from modules.student_house_decision_policy.domain.value_object.budget_filter_policy import (
     BudgetFilterPolicy,
+)
+from modules.university.application.dto.university_location_dto import (
+    UniversityLocationDTO,
+)
+from modules.university.application.port.university_repository_port import (
+    UniversityRepositoryPort,
 )
 
 
@@ -112,19 +130,59 @@ class _FakeCandidateRepository:
         return [row for row in rows if token in row.address]
 
 
-class _FakeObservationRepository:
-    """관측 데이터 mock 저장소."""
+class _FakePriceObservationRepository(PriceObservationRepositoryPort):
+    """가격 관측 데이터 mock 저장소."""
 
-    def __init__(
-        self,
-        rows: Dict[Tuple[int, str], ObservationPriceFeatures],
+    def __init__(self, data: Dict[int, PriceFeatureObservation]):
+        self._data = data
+
+    def save_bulk(self, observations: List[PriceFeatureObservation]) -> None:
+        pass
+
+    def save(
+        self, observation: PriceFeatureObservation
+    ) -> PriceFeatureObservation:
+        return observation
+
+    def get_by_house_platform_id(
+        self, house_platform_id: int
+    ) -> Optional[PriceFeatureObservation]:
+        return self._data.get(house_platform_id)
+
+
+class _FakeDistanceObservationRepository(DistanceObservationRepositoryPort):
+    """거리 관측 데이터 mock 저장소."""
+
+    def __init__(self, data: Dict[int, List[DistanceFeatureObservation]]):
+        self._data = data
+
+    def save_bulk(
+        self, house_id: int, distances: List[DistanceFeatureObservation]
     ):
-        self._rows = rows
+        pass
 
-    def fetch_price_features(
-        self, house_platform_id: int, snapshot_id: str
-    ) -> ObservationPriceFeatures | None:
-        return self._rows.get((house_platform_id, snapshot_id))
+    def get_bulk_by_house_platform_id(
+        self, house_platform_id: int
+    ) -> List[DistanceFeatureObservation]:
+        return self._data.get(house_platform_id, [])
+
+
+class _FakeUniversityRepository(UniversityRepositoryPort):
+    """대학 정보 mock 저장소."""
+
+    def get_all_university_names(self) -> List[str]:
+        return ["테스트대학교"]
+
+    def get_university_locations(self) -> List[UniversityLocationDTO]:
+        return [
+            UniversityLocationDTO(
+                university_location_id=999,
+                university_name="테스트대학교",
+                campus="본캠",
+                lat=37.0,
+                lng=127.0,
+            )
+        ]
 
 
 def _extract_region_token(preferred_region: str) -> str | None:
@@ -156,6 +214,8 @@ def test_filter_candidate_with_mock_observation() -> None:
         max_rent=60,
         house_type=None,
         additional_condition=None,
+        university_name="테스트대학교",
+        is_near=True,
     )
 
     candidates = [
@@ -188,31 +248,68 @@ def test_filter_candidate_with_mock_observation() -> None:
         ),
     ]
 
-    observations = {
-        (1, "snap-1"): ObservationPriceFeatures(
-            house_platform_id=1,
-            snapshot_id="snap-1",
-            estimated_move_in_cost=950,
-            monthly_cost_est=55,
-            price_percentile=0.3,
-            price_zscore=-0.2,
-            price_burden_nonlinear=0.2,
-        ),
-        (2, "snap-2"): ObservationPriceFeatures(
-            house_platform_id=2,
-            snapshot_id="snap-2",
-            estimated_move_in_cost=950,
-            monthly_cost_est=90,
-            price_percentile=0.7,
-            price_zscore=0.5,
-            price_burden_nonlinear=0.8,
-        ),
+    # Price Observation Mock
+    price_obs_1 = PriceFeatureObservation(
+        id=1,
+        house_platform_id=1,
+        recommendation_observation_id=1,
+        가격_백분위=0.3,
+        가격_z점수=-0.2,
+        예상_입주비용=950,
+        월_비용_추정=55,
+        가격_부담_비선형=0.2,
+    )
+    price_obs_2 = PriceFeatureObservation(
+        id=2,
+        house_platform_id=2,
+        recommendation_observation_id=1,
+        가격_백분위=0.7,
+        가격_z점수=0.5,
+        예상_입주비용=950,
+        월_비용_추정=90,
+        가격_부담_비선형=0.8,
+    )
+    price_observations = {
+        1: price_obs_1,
+        2: price_obs_2,
+    }
+
+    # Distance Observation Mock
+    dist_obs_1 = DistanceFeatureObservation(
+        id=1,
+        house_platform_id=1,
+        recommendation_observation_id=1,
+        university_id=999,  # "테스트대학교" ID
+        학교까지_분=15.0,  # 30분 이내 -> 통과
+        거리_백분위=0.1,
+        거리_버킷="near",
+        거리_비선형_점수=0.9,
+    )
+    dist_obs_2 = DistanceFeatureObservation(
+        id=2,
+        house_platform_id=2,
+        recommendation_observation_id=1,
+        university_id=999,
+        학교까지_분=40.0,  # 30분 초과 -> 탈락 (가격 조건도 탈락이지만)
+        거리_백분위=0.8,
+        거리_버킷="far",
+        거리_비선형_점수=0.1,
+    )
+    distance_observations = {
+        1: [dist_obs_1],
+        2: [dist_obs_2],
     }
 
     service = FilterCandidateService(
-        _FakeFinderRequestRepository(request),
-        _FakeCandidateRepository(candidates),
-        _FakeObservationRepository(observations),
+        finder_request_repo=_FakeFinderRequestRepository(request),
+        house_platform_repo=_FakeCandidateRepository(candidates),
+        price_observation_repo=_FakePriceObservationRepository(
+            price_observations
+        ),
+        distance_observation_repo=_FakeDistanceObservationRepository(
+            distance_observations
+        ),
+        university_repo=_FakeUniversityRepository(),
         policy=BudgetFilterPolicy(),
     )
 
