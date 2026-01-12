@@ -21,11 +21,25 @@ from modules.student_house_decision_policy.application.usecase.refresh_student_h
 from modules.student_house_decision_policy.domain.value_object.decision_policy_config import (
     DecisionPolicyConfig,
 )
-from modules.student_house_decision_policy.infrastructure.repository.observation_score_repository import (
-    ObservationScoreRepository,
+from infrastructure.db.postgres import SessionLocal
+from infrastructure.db.session_helper import open_session
+from modules.observations.adapter.output.repository.student_recommendation_feature_observation_repository_impl import (
+    StudentRecommendationFeatureObservationRepository,
+)
+from modules.observations.adapter.output.repository.student_recommendtation_price_observation_repository_impl import (
+    StudentRecommendationPriceObservationRepository,
+)
+from modules.observations.adapter.output.repository.student_recommendation_distance_observation_repository_impl import (
+    StudentRecommendationDistanceObservationRepository,
+)
+from modules.student_house_decision_policy.infrastructure.repository.house_platform_candidate_repository import (
+    HousePlatformCandidateRepository,
 )
 from modules.student_house_decision_policy.infrastructure.repository.student_house_score_repository import (
     StudentHouseScoreRepository,
+)
+from modules.university.adapter.output.university_repository import (
+    UniversityRepository,
 )
 
 
@@ -67,37 +81,49 @@ def main() -> None:
         top_k=args.top_k,
         policy_version=args.policy_version,
     )
-    observation_repo = ObservationScoreRepository()
-    student_house_repo = StudentHouseScoreRepository()
-    usecase = RefreshStudentHouseScoreService(
-        observation_repo=observation_repo,
-        student_house_repo=student_house_repo,
-        policy=policy,
-    )
+    session, generator = open_session(SessionLocal)
+    try:
+        house_platform_repo = HousePlatformCandidateRepository()
+        feature_repo = StudentRecommendationFeatureObservationRepository(
+            SessionLocal
+        )
+        price_repo = StudentRecommendationPriceObservationRepository(
+            session
+        )
+        distance_repo = StudentRecommendationDistanceObservationRepository(
+            session
+        )
+        university_repo = UniversityRepository(SessionLocal)
+        student_house_repo = StudentHouseScoreRepository()
 
-    result = usecase.execute(
-        RefreshStudentHouseScoreCommand(
-            observation_version=args.observation_version,
+        usecase = RefreshStudentHouseScoreService(
+            house_platform_repo=house_platform_repo,
+            feature_observation_repo=feature_repo,
+            price_observation_repo=price_repo,
+            distance_observation_repo=distance_repo,
+            university_repo=university_repo,
+            student_house_repo=student_house_repo,
             policy=policy,
         )
-    )
 
-    print(f"observation_version={result.observation_version}")
-    print(f"policy_version={result.policy_version}")
-    print(
-        f"observations={result.total_observations} "
-        f"processed={result.processed_count} failed={result.failed_count}"
-    )
-    print(f"top_k={len(result.top_candidates)}")
-    for idx, item in enumerate(result.top_candidates, start=1):
-        print(
-            f"{idx}. house_platform_id={item.house_platform_id} "
-            f"score={item.base_total_score} "
-            f"price={item.price_score} "
-            f"option={item.option_score} "
-            f"risk={item.risk_score} "
-            f"distance={item.distance_score}"
+        result = usecase.execute(
+            RefreshStudentHouseScoreCommand(
+                observation_version=args.observation_version,
+                policy=policy,
+            )
         )
+
+        print(f"observation_version={result.observation_version}")
+        print(f"policy_version={result.policy_version}")
+        print(
+            f"observations={result.total_observations} "
+            f"processed={result.processed_count} failed={result.failed_count}"
+        )
+    finally:
+        if generator:
+            generator.close()
+        else:
+            session.close()
 
 
 if __name__ == "__main__":
