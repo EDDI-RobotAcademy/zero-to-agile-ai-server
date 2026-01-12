@@ -69,7 +69,7 @@ class CreateFinderRequestUseCase:
         # Repository를 통한 영속화
         created = self.finder_request_repository.create(finder_request)
 
-        self._upsert_embedding(created)
+        # self._upsert_embedding(created)
         
         # 결과를 DTO로 변환하여 반환
         return FinderRequestDTO(
@@ -94,16 +94,16 @@ class CreateFinderRequestUseCase:
             updated_at=created.updated_at
         )
 
-    def _upsert_embedding(self, request: FinderRequest) -> None:
-        """요구서 임베딩을 저장한다."""
-        if not self.embedding_repository or not self.embedder:
-            return
-        text = build_finder_request_embedding_text(request)
-        embedding = _run_async(self.embedder.embed_texts([text]))
-        if embedding:
-            self.embedding_repository.upsert_embedding(
-                request.finder_request_id, embedding[0]
-            )
+    # def _upsert_embedding(self, request: FinderRequest) -> None:
+    #     """요구서 임베딩을 저장한다."""
+    #     if not self.embedding_repository or not self.embedder:
+    #         return
+    #     text = build_finder_request_embedding_text(request)
+    #     embedding = _run_async(self.embedder.embed_texts([text]))
+    #     if embedding:
+    #         self.embedding_repository.upsert_embedding(
+    #             request.finder_request_id, embedding[0]
+    #         )
 
 
 def _run_async(coro):

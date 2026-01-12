@@ -1,5 +1,6 @@
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
+from modules.ai_explanation.domain.tone import ChatTone
 
 # [1] 사용자 의뢰 조건 (프론트엔드가 사용자가 입력한 값을 채워서 보냄)
 class UserConstraints(BaseModel):
@@ -11,7 +12,6 @@ class UserConstraints(BaseModel):
 
 # [2] 매물 분석 결과 (추천 API의 응답 중 'observation_summary' 부분)
 class ObservationSummary(BaseModel):
-    # JSON 구조 그대로 딕셔너리로 받음 (구조가 복잡하므로 Dict[str, Any]로 유연하게 처리 추천)
     price: Dict[str, Any]  # 예: {"monthly_cost_est": 60, "price_percentile": 0.22...}
     commute: Dict[str, Any]  # 예: {"distance_to_school_min": 18.2...}
     risk: Dict[str, Any]  # 예: {"risk_probability_est": 0.03...}
@@ -29,8 +29,9 @@ class HouseRawData(BaseModel):
 
 # [Main] 최종 Request Body
 class FinderExplanationRequest(BaseModel):
-    # 추천/거절 여부 ("RECOMMENDED" or "REJECTED")
-    decision_status: str
+    tone: ChatTone = Field(default=ChatTone.FORMAL)  # 말투
+
+    decision_status: str    # "RECOMMENDED" (추천됨) / "REJECTED" (거절됨)
 
     # 사용자 조건
     user_constraints: UserConstraints

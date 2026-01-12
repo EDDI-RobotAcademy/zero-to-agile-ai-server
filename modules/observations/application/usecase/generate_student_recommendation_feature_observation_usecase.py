@@ -3,14 +3,12 @@ from datetime import datetime, timezone
 from modules.house_platform.application.port_out.house_platform_repository_port import HousePlatformRepositoryPort
 from modules.observations.application.assembler.observation_raw_assembler import ObservationRawAssembler
 from modules.observations.application.port.observation_repository_port import ObservationRepositoryPort
-from modules.observations.application.usecase.generate_distance_observation_usecase import \
-    GenerateDistanceObservationUseCase
+from modules.observations.application.usecase.generate_distance_observation_usecase import GenerateDistanceObservationUseCase
+from modules.observations.domain.model.price_feature_observation import PriceFeatureObservation
 from modules.observations.domain.model.student_recommendation_feature_observation import StudentRecommendationFeatureObservation
 from modules.observations.domain.value_objects.convenience_observation_features import ConvenienceObservationFeatures
-from modules.observations.domain.value_objects.distance_observation_features import DistanceObservationFeatures
 from modules.observations.domain.value_objects.observation_metadata import ObservationMetadata
 from modules.observations.domain.value_objects.observation_notes import ObservationNotes
-from modules.observations.domain.value_objects.price_observation_features import PriceObservationFeatures
 from modules.observations.domain.value_objects.risk_observation_features import RiskObservationFeatures
 
 
@@ -39,7 +37,7 @@ class GenerateStudentRecommendationFeatureObservationUseCase:
         raw_house = bundle.house_platform
 
         # ---------- Feature 생성 ----------
-        price = PriceObservationFeatures.from_raw(
+        price = PriceFeatureObservation.from_raw(
             ObservationRawAssembler.build_price_raw(raw_house)
         )
 
@@ -47,19 +45,18 @@ class GenerateStudentRecommendationFeatureObservationUseCase:
             ObservationRawAssembler.build_risk_raw(raw_house)
         )
 
-        convenience = ConvenienceObservationFeatures.from_raw(
-            ObservationRawAssembler.build_convenience_raw(bundle.options)
-            if bundle.options
-            else ObservationRawAssembler.empty_convenience_raw()
+        convenience = (
+            ConvenienceObservationFeatures.from_raw(ObservationRawAssembler.build_convenience_raw(bundle.options))
+            if getattr(bundle, "options", None)
+            else ConvenienceObservationFeatures.empty()
         )
 
         metadata = ObservationMetadata.from_raw(raw_house)
 
         feature = StudentRecommendationFeatureObservation(
             id=None,
-            platform_id=house_id,
-            snapshot_id=raw_house.snapshot_id,
-            가격_관측치=price,
+            house_platform_id=house_id,
+            snapshot_id=getattr(raw_house, "snapshot_id", "unknown"),
             위험_관측치=risk,
             편의_관측치=convenience,
             관측_메모=ObservationNotes.empty(),

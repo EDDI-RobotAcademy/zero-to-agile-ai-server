@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from modules.ai_explanation.domain.tone import ChatTone
 
 # todo: 요청값 결과에 따라 수정 필요
-class TenantPreferenceRequest(BaseModel):
+class OwnerExplanationRequest(BaseModel):
     tone: ChatTone = Field(
         default=ChatTone.FORMAL,
         description="답변 말투 (기본: 존댓말)",

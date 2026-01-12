@@ -47,13 +47,22 @@ class GetFinderRequestDetailUseCase:
         # "LANDLORD가 FINDER의 의뢰서를 보고 제안(SendMessage)을 보냄 -> FINDER가 수락(Y)"
         # 즉, sender=LANDLORD(viewer), receiver=FINDER(writer)
         
-        messages = self.send_message_repository.find_by_sender_id(viewer_id)
-        # 이 중에서 해당 finder_request_id와 관련되고 accept_type='Y'인 것이 있는지 확인
+        # messages = self.send_message_repository.find_by_sender_id(viewer_id)
+        # # 이 중에서 해당 finder_request_id와 관련되고 accept_type='Y'인 것이 있는지 확인
+        # has_accepted = any(
+        #     m.finder_request_id == finder_request_id and m.accept_type == 'Y'
+        #     for m in messages
+        # )
+        #
+        sender_messages = self.send_message_repository.find_by_sender_id(viewer_id)
+        receiver_messages = self.send_message_repository.find_by_receiver_id(viewer_id)
+
+        messages = sender_messages + receiver_messages
+
         has_accepted = any(
-            m.finder_request_id == finder_request_id and m.accept_type == 'Y' 
+            m.finder_request_id == finder_request_id and m.accept_type == 'Y'
             for m in messages
         )
-        
         # 만약 조회자가 작성자 본인이면 전화번호 노출 (선택사항)
         if viewer_id == finder_request.abang_user_id:
              has_accepted = True

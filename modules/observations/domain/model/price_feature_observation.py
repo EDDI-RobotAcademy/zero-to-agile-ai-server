@@ -1,14 +1,22 @@
 from dataclasses import dataclass
-from typing import Dict
+from datetime import datetime, timezone
+from typing import Dict, Optional
 
 
 @dataclass(frozen=True)
-class PriceObservationFeatures:
+class PriceFeatureObservation:
+    id: Optional[int]
+
+    house_platform_id: int
+    recommendation_observation_id: int  # Fake FK
+
     가격_백분위: float
     가격_z점수: float
     예상_입주비용: int
     월_비용_추정: int
     가격_부담_비선형: float
+
+    calculated_at: datetime = datetime.now(timezone.utc)
 
     def __post_init__(self):
         if not (0.0 <= self.가격_백분위 <= 1.0):
@@ -27,11 +35,18 @@ class PriceObservationFeatures:
             raise ValueError(f"가격 부담 비선형 점수는 0 이상이어야 합니다. 입력값: {self.가격_부담_비선형}")
 
     @classmethod
-    def from_raw(cls, raw: Dict) -> "PriceObservationFeatures":
+    def from_raw(cls, raw: Dict) -> "PriceFeatureObservation":
+        """
+        raw dict에서 PriceFeatureObservation 생성
+        반드시 'id', 'house_platform_id', 'recommendation_observation_id' 포함
+        """
         return cls(
+            id=raw.get("id"),
+            house_platform_id=raw["house_platform_id"],
+            recommendation_observation_id=raw["recommendation_observation_id"],
             가격_백분위=raw["price_percentile"],
             가격_z점수=raw["price_zscore"],
             예상_입주비용=raw["expected_move_in_cost"],
             월_비용_추정=raw["monthly_cost_estimate"],
-            가격_부담_비선형=raw["nonlinear_price_burden"],
+            가격_부담_비선형=raw["nonlinear_price_burden"] or 0.0,  # None 방어
         )

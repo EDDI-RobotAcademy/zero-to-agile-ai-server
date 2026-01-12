@@ -434,3 +434,5 @@ downloaded_docs/
 plan.md
 prd.md
 CLAUDE.md
+
+*.DS_Store

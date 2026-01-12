@@ -4,8 +4,6 @@ from modules.observations.domain.model.student_recommendation_feature_observatio
     StudentRecommendationFeatureObservation,
     ObservationMetadata,
     # feature value objects
-    PriceObservationFeatures,
-    DistanceObservationFeatures,
     RiskObservationFeatures,
     ConvenienceObservationFeatures,
     ObservationNotes,
@@ -61,13 +59,6 @@ class StudentRecommendationFeatureObservationRepository(ObservationRepositoryPor
                 house_platform_id=observation.platform_id,
                 snapshot_id=observation.snapshot_id,
 
-                # 가격
-                price_percentile=observation.가격_관측치.가격_백분위,
-                price_zscore=observation.가격_관측치.가격_z점수,
-                estimated_move_in_cost=observation.가격_관측치.예상_입주비용,
-                monthly_cost_est=observation.가격_관측치.월_비용_추정,
-                price_burden_nonlinear=observation.가격_관측치.가격_부담_비선형,
-
                 # 위험
                 risk_event_count=observation.위험_관측치.위험_사건_개수,
                 risk_event_types=observation.위험_관측치.위험_사건_유형,
@@ -104,13 +95,6 @@ class StudentRecommendationFeatureObservationRepository(ObservationRepositoryPor
             platform_id=orm.house_platform_id,
             snapshot_id=orm.snapshot_id,
 
-            가격_관측치=PriceObservationFeatures(
-                가격_백분위=orm.price_percentile,
-                가격_z점수=orm.price_zscore,
-                예상_입주비용=orm.estimated_move_in_cost,
-                월_비용_추정=orm.monthly_cost_est,
-                가격_부담_비선형=orm.price_burden_nonlinear,
-            ),
             위험_관측치=RiskObservationFeatures(
                 위험_사건_개수=orm.risk_event_count,
                 위험_사건_유형=orm.risk_event_types,

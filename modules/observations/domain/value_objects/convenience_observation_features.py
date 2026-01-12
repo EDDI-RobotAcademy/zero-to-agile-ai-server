@@ -20,3 +20,8 @@ class ConvenienceObservationFeatures:
             필수_옵션_커버리지=raw["essential_option_coverage"],
             편의_점수=raw["convenience_score"],
         )
+
+    @classmethod
+    def empty(cls) -> "ConvenienceObservationFeatures":
+        """옵션이 없을 때 반환하는 기본 값"""
+        return cls(필수_옵션_커버리지=0.0, 편의_점수=0.0)

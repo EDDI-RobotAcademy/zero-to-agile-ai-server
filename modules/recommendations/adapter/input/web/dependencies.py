@@ -1,6 +1,8 @@
 from fastapi import Depends
 
 from infrastructure.db.postgres import get_db_session, SessionLocal
+from modules.decision_context_signal_builder.application.usecase.build_decision_context_signal_usecase import \
+    BuildDecisionContextSignalUseCase
 from modules.finder_request.adapter.output.repository.finder_request_repository import (
     FinderRequestRepository,
 )
@@ -76,4 +78,12 @@ def get_recommend_student_house_mock_usecase(
         house_platform_repo=house_platform_repo,
         observation_repo=observation_repo,
         score_repo=score_repo,
+    )
+
+def get_build_decision_context_signal_usecase() -> BuildDecisionContextSignalUseCase:
+    observation_repo = StudentRecommendationFeatureObservationRepository(
+        SessionLocal
+    )
+    return BuildDecisionContextSignalUseCase(
+        observation_repo=observation_repo
     )

@@ -7,6 +7,7 @@ from typing import Optional
 class DistanceFeatureObservation:
     id: Optional[int]
 
+    house_platform_id: int
     recommendation_observation_id: int  # Fake FK
     university_id: int
 

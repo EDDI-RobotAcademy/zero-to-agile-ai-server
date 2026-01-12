@@ -9,6 +9,7 @@ class StudentRecommendationDistanceObservationORM(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
 
+    house_id = Column(BigInteger, nullable=False, index=True)
     recommendation_observation_id = Column(
         BigInteger,
         nullable=False,

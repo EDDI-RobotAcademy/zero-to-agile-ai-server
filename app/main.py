@@ -9,6 +9,7 @@ from modules.mq.adapter.input.web.router.search_house_router import router as se
 from modules.utils.address_autocomplete.router.address_autocomplete_router import router as address_autocomplete
 from modules.observations_assistance.adapter.input.router.building_ledger_batch_router import router as building_ledger_batch_router
 from modules.house_analysis.adapter.input.web.router.house_analysis_router import router as house_analysis_router
+from modules.ai_explanation.adapter.input.web.router.explain_router import router as explain_router
 from modules.chatbot.adapter.input.web.router.chat_router import router as chat_router
 from modules.abang_user.adapter.input.web.router.abang_user_router import router as abang_user_router
 from modules.university.adapter.input.web.router.university_router import router as university_router
@@ -45,6 +46,7 @@ api_router.include_router(search_house_router)
 api_router.include_router(address_autocomplete)
 api_router.include_router(building_ledger_batch_router)
 api_router.include_router(chat_router)
+api_router.include_router(explain_router)
 api_router.include_router(abang_user_router)
 api_router.include_router(university_router)
 api_router.include_router(house_platform_router)

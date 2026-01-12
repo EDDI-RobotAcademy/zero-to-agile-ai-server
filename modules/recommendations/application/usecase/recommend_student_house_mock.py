@@ -41,6 +41,12 @@ class RecommendStudentHouseMockService(RecommendStudentHouseService):
     ) -> RecommendStudentHouseMockResponse:
         """후보 기반으로 임시 추천 응답을 생성한다."""
         policy = self.policy
+        request = self.finder_request_repo.find_by_id(
+            command.finder_request_id
+        )
+        query_context = (
+            self._build_query_context(request, policy) if request else {}
+        )
         self._candidate_map = {
             candidate.house_platform_id: candidate
             for candidate in command.candidates
@@ -87,6 +93,8 @@ class RecommendStudentHouseMockService(RecommendStudentHouseService):
             finder_request_id=command.finder_request_id,
             recommended_top_k=recommended_items,
             rejected_top_k=rejected_items,
+            total_candidates=len(command.candidates),
+            query_context=query_context,
         )
 
     def _build_rank_seed(self, candidates: list[Any], base_score: float):

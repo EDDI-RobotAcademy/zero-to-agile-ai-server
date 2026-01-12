@@ -299,6 +299,7 @@ def test_recommend_student_house_mock_response():
         )
     )
     result = response.to_result()
-    assert result.status == "FAILED"
+    assert result.status == "SUCCESS"
     assert result.recommended_top_k
     assert result.rejected_top_k is not None
+    assert result.summary["total_candidates"] == len(candidates)

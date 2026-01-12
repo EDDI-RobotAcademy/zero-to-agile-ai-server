@@ -13,13 +13,6 @@ class StudentRecommendationFeatureObservationORM(Base):
     house_platform_id = Column(BigInteger, primary_key=True, nullable=False)
     snapshot_id = Column(String, nullable=False)
 
-    # 가격 관련
-    price_percentile = Column(Float, nullable=False)
-    price_zscore = Column(Float, nullable=False)
-    estimated_move_in_cost = Column(BigInteger, nullable=False)
-    monthly_cost_est = Column(BigInteger, nullable=False)
-    price_burden_nonlinear = Column(Float, nullable=False)
-
     # 위험 관련
     risk_event_count = Column(Integer, nullable=False)
     risk_event_types = Column(ARRAY(Text), nullable=False)
