@@ -17,6 +17,37 @@ from modules.recommendations.application.dto.recommendation_dto import (
 from modules.recommendations.application.port_in.recommend_student_house_port import (
     RecommendStudentHousePort,
 )
+from infrastructure.db.postgres import SessionLocal
+from modules.decision_context_signal_builder.application.usecase.build_decision_context_signal_usecase import (
+    BuildDecisionContextSignalUseCase,
+)
+from modules.finder_request.adapter.output.repository.finder_request_repository import (
+    FinderRequestRepository,
+)
+from modules.house_platform.infrastructure.repository.house_platform_repository import (
+    HousePlatformRepository,
+)
+from modules.observations.adapter.output.repository.student_recommendation_distance_observation_repository_impl import (
+    StudentRecommendationDistanceObservationRepository,
+)
+from modules.observations.adapter.output.repository.student_recommendation_feature_observation_repository_impl import (
+    StudentRecommendationFeatureObservationRepository,
+)
+from modules.observations.adapter.output.repository.student_recommendtation_price_observation_repository_impl import (
+    StudentRecommendationPriceObservationRepository,
+)
+from modules.student_house_decision_policy.application.usecase.filter_candidate import (
+    FilterCandidateService,
+)
+from modules.student_house_decision_policy.infrastructure.repository.house_platform_candidate_repository import (
+    HousePlatformCandidateRepository,
+)
+from modules.student_house_decision_policy.infrastructure.repository.student_house_score_repository import (
+    StudentHouseScoreRepository,
+)
+from modules.university.adapter.output.university_repository import (
+    UniversityRepository,
+)
 from modules.student_house_decision_policy.application.dto.candidate_filter_dto import (
     FilterCandidateCommand,
 )
@@ -48,10 +79,10 @@ class RecommendStudentHouseUseCase(RecommendStudentHousePort):
 
     def __init__(
         self,
-        finder_request_repo: FinderRequestRepositoryPort,
-        house_platform_repo: HousePlatformRepositoryPort,
-        observation_repo,
-        score_repo: StudentHouseScorePort,
+        finder_request_repo: FinderRequestRepositoryPort | None = None,
+        house_platform_repo: HousePlatformRepositoryPort | None = None,
+        observation_repo=None,
+        score_repo: StudentHouseScorePort | None = None,
         price_observation_repo: PriceObservationRepositoryPort | None = None,
         distance_observation_repo: DistanceObservationRepositoryPort | None = None,
         university_repo: UniversityRepositoryPort | None = None,
@@ -59,16 +90,49 @@ class RecommendStudentHouseUseCase(RecommendStudentHousePort):
         build_context_signal_usecase=None,
         policy: DecisionPolicyConfig | None = None,
     ):
-        self.finder_request_repo = finder_request_repo
-        self.house_platform_repo = house_platform_repo
-        self.observation_repo = observation_repo
-        self.score_repo = score_repo
-        self.price_observation_repo = price_observation_repo
-        self.distance_observation_repo = distance_observation_repo
-        self.university_repo = university_repo
-        self.filter_usecase = filter_usecase
-        self.build_context_signal_usecase = build_context_signal_usecase
+        # 인자가 없으면 기본 구현체로 자체 조립한다.
+        # TODO: 의존성 조립을 별도 팩토리로 분리한다.
+        shared_session = None
+        if (
+            finder_request_repo is None
+            or price_observation_repo is None
+            or distance_observation_repo is None
+        ):
+            shared_session = SessionLocal()
+
+        self.finder_request_repo = finder_request_repo or FinderRequestRepository(
+            shared_session
+        )
+        self.house_platform_repo = house_platform_repo or HousePlatformRepository()
+        self.observation_repo = (
+            observation_repo
+            or StudentRecommendationFeatureObservationRepository(SessionLocal)
+        )
+        self.score_repo = score_repo or StudentHouseScoreRepository()
+        self.price_observation_repo = (
+            price_observation_repo
+            or StudentRecommendationPriceObservationRepository(shared_session)
+        )
+        self.distance_observation_repo = (
+            distance_observation_repo
+            or StudentRecommendationDistanceObservationRepository(shared_session)
+        )
+        self.university_repo = university_repo or UniversityRepository(SessionLocal)
+        self.filter_usecase = filter_usecase or FilterCandidateService(
+            finder_request_repo=self.finder_request_repo,
+            house_platform_repo=HousePlatformCandidateRepository(),
+            price_observation_repo=self.price_observation_repo,
+            distance_observation_repo=self.distance_observation_repo,
+            university_repo=self.university_repo,
+        )
+        self.build_context_signal_usecase = (
+            build_context_signal_usecase
+            or BuildDecisionContextSignalUseCase(
+                observation_repo=self.observation_repo
+            )
+        )
         self.policy = policy or DecisionPolicyConfig()
+        self._shared_session = shared_session
 
     def execute(self, command: RecommendStudentHouseCommand) -> RecommendStudentHouseResult:
         """추천 결과를 생성한다."""
