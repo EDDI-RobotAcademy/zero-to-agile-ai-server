@@ -16,3 +16,4 @@ class OwnerResponse(BaseModel):
         default=None,
         description="핵심 요약 3줄 (리스트 형태)"
     )
+
