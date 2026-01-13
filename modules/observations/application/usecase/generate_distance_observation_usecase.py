@@ -53,7 +53,7 @@ class GenerateDistanceObservationUseCase:
             )
 
         # Repository 저장
-        self.distance_repo.save_bulk(observations)
+        self.distance_repo.save_bulk(distances=observations)
 
     # ---------- 계산 로직 ----------
     def _calc_minutes(self, house_latlng: dict, uni_lat: float, uni_lng: float) -> float:

@@ -157,8 +157,25 @@ def main() -> None:
             price_uc=price_uc,
             distance_uc=distance_uc,
         )
-        for candidate in candidates:
-            full_uc.execute(candidate.house_platform_id)
+        
+        obs_processed = 0
+        obs_failed = 0
+        total_candidates = len(candidates)
+        print(f"Generating observations for {total_candidates} candidates...")
+        
+        for i, candidate in enumerate(candidates, 1):
+            try:
+                full_uc.execute(candidate.house_platform_id)
+                obs_processed += 1
+            except Exception as e:
+                obs_failed += 1
+                # print(f"[Warning] Failed to generate observation for house {candidate.house_platform_id}: {e}")
+            
+            if i % 10 == 0:
+                print(f"Progress: {i}/{total_candidates} ({(i/total_candidates)*100:.1f}%) - Processed: {obs_processed}, Failed: {obs_failed}", end='\r')
+        
+        print() # Newline after loop
+        print(f"Observation generation finished: processed={obs_processed}, failed={obs_failed}")
 
         usecase = RefreshStudentHouseScoreService(
             house_platform_repo=house_platform_repo,
