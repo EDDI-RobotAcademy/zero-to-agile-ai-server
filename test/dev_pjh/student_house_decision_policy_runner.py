@@ -19,9 +19,6 @@ from modules.finder_request.adapter.output.repository.finder_request_repository 
 from modules.student_house_decision_policy.application.dto.candidate_filter_dto import (
     FilterCandidateCommand,
 )
-from modules.student_house_decision_policy.application.dto.candidate_filter_dto import (
-    ObservationPriceFeatures,
-)
 from modules.student_house_decision_policy.application.usecase.filter_candidate import (
     FilterCandidateService,
 )
@@ -31,8 +28,14 @@ from modules.student_house_decision_policy.domain.value_object.budget_filter_pol
 from modules.student_house_decision_policy.infrastructure.repository.house_platform_candidate_repository import (
     HousePlatformCandidateRepository,
 )
-from modules.house_platform.infrastructure.orm.house_platform_orm import (
-    HousePlatformORM,
+from modules.observations.adapter.output.repository.student_recommendtation_price_observation_repository_impl import (
+    StudentRecommendationPriceObservationRepository,
+)
+from modules.observations.adapter.output.repository.student_recommendation_distance_observation_repository_impl import (
+    StudentRecommendationDistanceObservationRepository,
+)
+from modules.university.adapter.output.university_repository import (
+    UniversityRepository,
 )
 
 
@@ -54,50 +57,6 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-class MockObservationPriceRepository:
-    """house_platform 원본을 관측치로 변환하는 mock 저장소."""
-
-    def __init__(self, session_factory):
-        self._session_factory = session_factory
-
-    def fetch_price_features(
-        self, house_platform_id: int, snapshot_id: str
-    ) -> ObservationPriceFeatures | None:
-        session = self._session_factory()
-        try:
-            row = (
-                session.query(
-                    HousePlatformORM.house_platform_id,
-                    HousePlatformORM.snapshot_id,
-                    HousePlatformORM.deposit,
-                    HousePlatformORM.monthly_rent,
-                    HousePlatformORM.manage_cost,
-                )
-                .filter(HousePlatformORM.house_platform_id == house_platform_id)
-                .one_or_none()
-            )
-            if not row:
-                return None
-            if row[1] != snapshot_id:
-                return None
-            deposit = int(row[2] or 0)
-            monthly_rent = int(row[3] or 0)
-            manage_cost = int(row[4] or 0)
-            estimated_move_in_cost = deposit + monthly_rent + manage_cost
-            monthly_cost_est = monthly_rent + manage_cost
-            return ObservationPriceFeatures(
-                house_platform_id=house_platform_id,
-                snapshot_id=snapshot_id,
-                estimated_move_in_cost=estimated_move_in_cost,
-                monthly_cost_est=monthly_cost_est,
-                price_percentile=0.5,
-                price_zscore=0.0,
-                price_burden_nonlinear=min(monthly_cost_est / 100.0, 1.0),
-            )
-        finally:
-            session.close()
-
-
 def main() -> None:
     load_dotenv()
     args = parse_args()
@@ -107,7 +66,11 @@ def main() -> None:
     try:
         finder_request_repo = FinderRequestRepository(db)
         house_platform_repo = HousePlatformCandidateRepository()
-        observation_repo = MockObservationPriceRepository(SessionLocal)
+        
+        price_repo = StudentRecommendationPriceObservationRepository(db)
+        distance_repo = StudentRecommendationDistanceObservationRepository(db)
+        university_repo = UniversityRepository(db)
+        
         policy = (
             BudgetFilterPolicy(budget_margin_ratio=args.budget_margin_ratio)
             if args.budget_margin_ratio is not None
@@ -116,7 +79,9 @@ def main() -> None:
         usecase = FilterCandidateService(
             finder_request_repo,
             house_platform_repo,
-            observation_repo,
+            price_repo,
+            distance_repo,
+            university_repo,
             policy=policy,
         )
 

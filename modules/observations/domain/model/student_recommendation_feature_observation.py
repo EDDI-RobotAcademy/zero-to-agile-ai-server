@@ -24,4 +24,6 @@ class StudentRecommendationFeatureObservation:
     관측_메모: ObservationNotes
     메타데이터: ObservationMetadata
 
-    calculated_at: Optional[datetime] = field(default_factory=datetime.now(timezone.utc))
+    calculated_at: Optional[datetime] = field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )

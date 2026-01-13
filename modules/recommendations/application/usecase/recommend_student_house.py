@@ -283,16 +283,11 @@ class RecommendStudentHouseService(RecommendStudentHousePort):
 
     def _fetch_observation(self, house_platform_id: int):
         """관측 저장소의 메서드 차이를 내부에서 흡수한다."""
-        if hasattr(self.observation_repo, "find_latest_by_house_id"):
-            return self.observation_repo.find_latest_by_house_id(
-                house_platform_id
-            )
-        if hasattr(self.observation_repo, "find_latest_by_platform_id"):
-            return self.observation_repo.find_latest_by_platform_id(
-                house_platform_id
-            )
-        # TODO: 관측 저장소 포트가 정리되면 분기 로직을 제거한다.
-        return None
+        if not hasattr(self.observation_repo, "find_latest_by_house_id"):
+            raise AttributeError("관측 저장소가 없습니다.")
+        return self.observation_repo.find_latest_by_house_id(
+            house_platform_id
+        )
 
     @staticmethod
     def _build_observation_summary(

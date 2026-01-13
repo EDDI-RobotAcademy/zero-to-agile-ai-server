@@ -6,11 +6,7 @@ class ExplainOwnerUseCase:
     def __init__(self, llm_port: LLMPort = None):
         self.llm_port = llm_port or LLMAdapter()
 
-    def execute(self, request) -> AiResponse:
-        # Owner 전용 프롬프트 호출
-        explanation = self.llm_port.generate_owner_explanation(
-            house=request.my_house,
-            tenant=request.candidate,
-            tone=request.tone
-        )
-        return AiResponse(message=explanation)
+    def execute(self, request: OwnerExplanationRequest) -> AiResponse:
+        explanation_text = self.llm_port.generate_owner_explanation(request)
+
+        return AiResponse(message=explanation_text)

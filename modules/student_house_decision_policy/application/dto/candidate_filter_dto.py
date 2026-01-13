@@ -22,6 +22,8 @@ class FilterCandidateCriteria:
     preferred_region: str | None = None
     house_type: str | None = None
     additional_condition: str | None = None
+    university_name: str | None = None
+    is_near: bool = False
 
 
 @dataclass

@@ -52,11 +52,13 @@ class StudentRecommendationFeatureObservationRepository(ObservationRepositoryPor
         finally:
             db.close()
 
-    def save(self, observation: StudentRecommendationFeatureObservation) -> None:
+    def save(
+        self, observation: StudentRecommendationFeatureObservation
+    ) -> StudentRecommendationFeatureObservation:
         db: Session = self.db_session_factory()
         try:
             orm = StudentRecommendationFeatureObservationORM(
-                house_platform_id=observation.platform_id,
+                house_platform_id=observation.house_platform_id,
                 snapshot_id=observation.snapshot_id,
 
                 # 위험
@@ -82,6 +84,7 @@ class StudentRecommendationFeatureObservationRepository(ObservationRepositoryPor
             db.flush()  # PK 생성
             observation.id = orm.id  # Domain에 반영
             db.commit()
+            return observation
 
         finally:
             db.close()
@@ -92,7 +95,7 @@ class StudentRecommendationFeatureObservationRepository(ObservationRepositoryPor
     ) -> StudentRecommendationFeatureObservation:
         return StudentRecommendationFeatureObservation(
             id=orm.id,
-            platform_id=orm.house_platform_id,
+            house_platform_id=orm.house_platform_id,
             snapshot_id=orm.snapshot_id,
 
             위험_관측치=RiskObservationFeatures(

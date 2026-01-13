@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Sequence
+from dataclasses import dataclass
 
 from modules.student_house_decision_policy.domain.value_object.decision_policy_config import (
     DecisionPolicyConfig,
@@ -21,18 +20,18 @@ class ObservationScoreSource:
     """관측 저장소에서 가져온 원본 지표."""
 
     house_platform_id: int
-    snapshot_id: str
+    snapshot_id: str | None
     observation_version: str | None
-    price_percentile: float
-    price_zscore: float
-    price_burden_nonlinear: float
+    price_percentile: float | None
+    price_zscore: float | None
+    price_burden_nonlinear: float | None
     estimated_move_in_cost: int
     monthly_cost_est: int
-    essential_option_coverage: float
-    convenience_score: float
-    risk_probability_est: float
-    risk_severity_score: float
-    risk_nonlinear_penalty: float
+    essential_option_coverage: float | None
+    convenience_score: float | None
+    risk_probability_est: float | None
+    risk_severity_score: float | None
+    risk_nonlinear_penalty: float | None
     distance_to_school_min: float
     distance_percentile: float
     distance_nonlinear_score: float
@@ -87,6 +86,3 @@ class RefreshStudentHouseScoreResult:
     total_observations: int
     processed_count: int
     failed_count: int
-    top_candidates: Sequence[StudentHouseScoreSummary] = field(
-        default_factory=list
-    )

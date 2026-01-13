@@ -53,3 +53,29 @@ class UniversityRepository(UniversityRepositoryPort):
             ]
         finally:
             db.close()
+
+    def get_unique_university_locations(self) -> List[int]:
+        """주소가 중복되지 않는 대학 위치 ID 목록을 조회한다."""
+        db: Session = self.db_session_factory()
+        try:
+            rows = (
+                db.query(UniversityLocation)
+                .filter(UniversityLocation.lat.isnot(None))
+                .filter(UniversityLocation.lng.isnot(None))
+                .all()
+            )
+            unique_map: dict[str, int] = {}
+            unique_ids: list[int] = []
+            for row in rows:
+                address = (row.road_name_address or "").strip()
+                if not address:
+                    # 주소가 비어 있으면 개별 레코드를 고유 대상으로 본다.
+                    unique_ids.append(int(row.university_location_id))
+                    continue
+                if address in unique_map:
+                    continue
+                unique_map[address] = int(row.university_location_id)
+                unique_ids.append(int(row.university_location_id))
+            return unique_ids
+        finally:
+            db.close()

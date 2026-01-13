@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from modules.observations.application.port.price_observation_repository_port import PriceObservationRepositoryPort
@@ -55,4 +55,26 @@ class StudentRecommendationPriceObservationRepository(PriceObservationRepository
             월_비용_추정=observation.월_비용_추정,
             가격_부담_비선형=observation.가격_부담_비선형,
             calculated_at=observation.calculated_at,
+        )
+
+    def get_by_house_platform_id(self, house_platform_id: int) -> Optional[PriceFeatureObservation]:
+        """매물 ID로 PriceFeatureObservation 조회 (최신)"""
+        orm = self.session.query(StudentRecommendationPriceObservationsORM) \
+            .filter(StudentRecommendationPriceObservationsORM.house_platform_id == house_platform_id) \
+            .order_by(StudentRecommendationPriceObservationsORM.calculated_at.desc()) \
+            .first()
+
+        if not orm:
+            return None
+
+        return PriceFeatureObservation(
+            id=orm.id,
+            house_platform_id=orm.house_platform_id,
+            recommendation_observation_id=orm.recommendation_observation_id,
+            가격_백분위=orm.가격_백분위,
+            가격_z점수=orm.가격_z점수,
+            예상_입주비용=orm.예상_입주비용,
+            월_비용_추정=orm.월_비용_추정,
+            가격_부담_비선형=orm.가격_부담_비선형,
+            calculated_at=orm.calculated_at,
         )

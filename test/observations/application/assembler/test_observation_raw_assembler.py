@@ -12,7 +12,14 @@ def test_build_price_raw():
         manage_cost=10,
     )
 
-    result = ObservationRawAssembler.build_price_raw(house)
+    house_platform_id = 1
+    recommendation_observation_id = 42
+
+    result = ObservationRawAssembler.build_price_raw(
+        house,
+        house_platform_id=house_platform_id,
+        recommendation_observation_id=recommendation_observation_id
+    )
 
     assert result["expected_move_in_cost"] == 1000
     assert result["monthly_cost_estimate"] == 60

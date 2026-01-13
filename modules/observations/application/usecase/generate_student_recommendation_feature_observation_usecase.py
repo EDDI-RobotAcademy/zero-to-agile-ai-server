@@ -19,38 +19,31 @@ class HouseNotFoundError(Exception):
 
 class GenerateStudentRecommendationFeatureObservationUseCase:
 
-    def __init__(
-        self,
-        observation_repo: ObservationRepositoryPort,
-        distance_usecase: GenerateDistanceObservationUseCase,
-        house_repo: HousePlatformRepositoryPort,
-    ):
+    def __init__(self, observation_repo, distance_usecase, house_repo):
         self.observation_repo = observation_repo
         self.distance_usecase = distance_usecase
         self.house_repo = house_repo
 
-    def execute(self, house_id: int) -> StudentRecommendationFeatureObservation:
+    def execute(self, house_id: int):
         bundle = self.house_repo.fetch_bundle_by_id(house_id)
         if not bundle or not bundle.house_platform:
             raise HouseNotFoundError(house_id)
 
         raw_house = bundle.house_platform
 
-        # ---------- Feature 생성 ----------
-        price = PriceFeatureObservation.from_raw(
-            ObservationRawAssembler.build_price_raw(raw_house)
+        # Price 생성
+        price_raw = ObservationRawAssembler.build_price_raw(
+            house=raw_house,
+            house_platform_id=house_id,
+            recommendation_observation_id=None,  # 저장 전
         )
+        price = PriceFeatureObservation.from_raw(price_raw)
 
-        risk = RiskObservationFeatures.from_raw(
-            ObservationRawAssembler.build_risk_raw(raw_house)
-        )
-
-        convenience = (
-            ConvenienceObservationFeatures.from_raw(ObservationRawAssembler.build_convenience_raw(bundle.options))
-            if getattr(bundle, "options", None)
-            else ConvenienceObservationFeatures.empty()
-        )
-
+        # Risk, Convenience, Metadata 생성
+        risk = RiskObservationFeatures.from_raw(ObservationRawAssembler.build_risk_raw(raw_house))
+        convenience = (ConvenienceObservationFeatures.from_raw(ObservationRawAssembler.build_convenience_raw(bundle.options))
+                       if getattr(bundle, "options", None)
+                       else ConvenienceObservationFeatures.empty())
         metadata = ObservationMetadata.from_raw(raw_house)
 
         feature = StudentRecommendationFeatureObservation(
@@ -64,13 +57,14 @@ class GenerateStudentRecommendationFeatureObservationUseCase:
             calculated_at=datetime.now(timezone.utc),
         )
 
-        # ---------- 저장 & PK 확보 ----------
+        # 저장 & PK 확보
         saved_feature = self.observation_repo.save(feature)
 
-        # ---------- Distance 생성 ----------
-        self.distance_usecase.execute(
-            recommendation_observation_id=saved_feature.id,
-            house_id=house_id,
-        )
+        # Distance 생성 (Orchestrator에서 None 처리 가능)
+        if self.distance_usecase:
+            self.distance_usecase.execute(
+                recommendation_observation_id=saved_feature.id,
+                house_id=house_id,
+            )
 
         return saved_feature

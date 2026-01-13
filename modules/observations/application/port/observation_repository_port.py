@@ -5,19 +5,19 @@ from modules.observations.domain.model.student_recommendation_feature_observatio
 class ObservationRepositoryPort(ABC):
 
     @abstractmethod
-    def find_latest_by_platform_id(
-        self, platform_id: int
+    def find_latest_by_house_id(
+        self, house_id: int
     ) -> Optional[StudentRecommendationFeatureObservation]:
         pass
 
     @abstractmethod
     def save(
         self, observation: StudentRecommendationFeatureObservation
-    ) -> None:
+    ) -> StudentRecommendationFeatureObservation:
         pass
 
     @abstractmethod
     def find_history(
-        self, platform_id: int
+        self, house_id: int
     ) -> List[StudentRecommendationFeatureObservation]:
         pass

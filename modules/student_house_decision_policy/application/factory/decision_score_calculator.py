@@ -48,14 +48,9 @@ class DecisionScoreCalculator:
         risk_score = self._calculate_risk_score(source)
         distance_score = self._calculate_distance_score(source)
 
-        total = (
-            price_score * self._total_weights[0]
-            + risk_score * self._total_weights[1]
-            + option_score * self._total_weights[2]
-            + distance_score * self._total_weights[3]
+        base_total_score = self._combine_total_score(
+            price_score, risk_score, option_score, distance_score
         )
-
-        base_total_score = _clamp_score(total)
         is_recommended = base_total_score >= self.policy.threshold_base_total
 
         return StudentHouseScoreRecord(
@@ -73,58 +68,91 @@ class DecisionScoreCalculator:
 
     def _calculate_price_score(
         self, source: ObservationScoreSource
-    ) -> float:
+    ) -> float | None:
         """가격 관측치를 점수로 환산한다."""
         # 분포 내 위치(가격 percentile/zscore)는 낮을수록 유리하다.
-        percentile_score = (1.0 - _clamp01(source.price_percentile)) * 100.0
-        zscore_score = _zscore_to_score(
-            source.price_zscore, self.policy.zscore_min, self.policy.zscore_max
+        percentile_score = (
+            (1.0 - _clamp01(source.price_percentile)) * 100.0
+            if source.price_percentile is not None
+            else None
+        )
+        zscore_score = (
+            _zscore_to_score(
+                source.price_zscore,
+                self.policy.zscore_min,
+                self.policy.zscore_max,
+            )
+            if source.price_zscore is not None
+            else None
         )
         # 체감 가격 부담은 0~1 범위에서 낮을수록 유리하다.
-        burden_score = (1.0 - _clamp01(source.price_burden_nonlinear)) * 100.0
-
-        total = (
-            percentile_score * self._price_weights[0]
-            + zscore_score * self._price_weights[1]
-            + burden_score * self._price_weights[2]
+        burden_score = (
+            (1.0 - _clamp01(source.price_burden_nonlinear)) * 100.0
+            if source.price_burden_nonlinear is not None
+            else None
         )
-        return _clamp_score(total)
+
+        return _weighted_average(
+            (
+                (percentile_score, self._price_weights[0]),
+                (zscore_score, self._price_weights[1]),
+                (burden_score, self._price_weights[2]),
+            )
+        )
 
     def _calculate_option_score(
         self, source: ObservationScoreSource
-    ) -> float:
+    ) -> float | None:
         """편의/옵션 관측치를 점수로 환산한다."""
-        coverage_score = _ratio_to_score(source.essential_option_coverage)
-        convenience_score = _ratio_to_score(source.convenience_score)
-        # TODO: convenience_score 범위(0~1, 0~100) 정의가 확정되면 정규화 로직을 고정한다.
-        total = (
-            coverage_score * self._option_weights[0]
-            + convenience_score * self._option_weights[1]
+        coverage_score = (
+            _ratio_to_score(source.essential_option_coverage)
+            if source.essential_option_coverage is not None
+            else None
         )
-        return _clamp_score(total)
+        convenience_score = (
+            _ratio_to_score(source.convenience_score)
+            if source.convenience_score is not None
+            else None
+        )
+        # TODO: convenience_score 범위(0~1, 0~100) 정의가 확정되면 정규화 로직을 고정한다.
+        return _weighted_average(
+            (
+                (coverage_score, self._option_weights[0]),
+                (convenience_score, self._option_weights[1]),
+            )
+        )
 
     def _calculate_risk_score(
         self, source: ObservationScoreSource
-    ) -> float:
+    ) -> float | None:
         """리스크 관측치를 점수로 환산한다."""
         probability_score = (
-            1.0 - _clamp01(source.risk_probability_est)
-        ) * 100.0
-        severity_score = (1.0 - _clamp01(source.risk_severity_score)) * 100.0
-        penalty_score = (
-            1.0 - _clamp01(source.risk_nonlinear_penalty)
-        ) * 100.0
-        # TODO: risk_severity_score가 0~1 스케일인지 확인 후 정규화 방식을 조정한다.
-        total = (
-            probability_score * self._risk_weights[0]
-            + severity_score * self._risk_weights[1]
-            + penalty_score * self._risk_weights[2]
+            (1.0 - _clamp01(source.risk_probability_est)) * 100.0
+            if source.risk_probability_est is not None
+            else None
         )
-        return _clamp_score(total)
+        severity_score = (
+            (1.0 - _clamp01(source.risk_severity_score)) * 100.0
+            if source.risk_severity_score is not None
+            else None
+        )
+        penalty_score = (
+            (1.0 - _clamp01(source.risk_nonlinear_penalty)) * 100.0
+            if source.risk_nonlinear_penalty is not None
+            else None
+        )
+        # TODO: risk_severity_score가 0~1 스케일인지 확인 후 정규화 방식을 조정한다.
+        return _weighted_average(
+            (
+                (probability_score, self._risk_weights[0]),
+                (severity_score, self._risk_weights[1]),
+                (penalty_score, self._risk_weights[2]),
+            )
+        )
 
     def _calculate_distance_score(
         self, source: ObservationScoreSource
-    ) -> float:
+    ) -> float | None:
         """거리 관측치를 점수로 환산한다."""
         time_score = _distance_time_to_score(
             source.distance_to_school_min,
@@ -136,12 +164,31 @@ class DecisionScoreCalculator:
         ) * 100.0
         nonlinear_score = _ratio_to_score(source.distance_nonlinear_score)
 
-        total = (
-            time_score * self._distance_weights[0]
-            + percentile_score * self._distance_weights[1]
-            + nonlinear_score * self._distance_weights[2]
+        return _weighted_average(
+            (
+                (time_score, self._distance_weights[0]),
+                (percentile_score, self._distance_weights[1]),
+                (nonlinear_score, self._distance_weights[2]),
+            )
         )
-        return _clamp_score(total)
+
+    def _combine_total_score(
+        self,
+        price_score: float | None,
+        risk_score: float | None,
+        option_score: float | None,
+        distance_score: float | None,
+    ) -> float:
+        """누락된 항목은 제외하고 총점을 계산한다."""
+        total = _weighted_average(
+            (
+                (price_score, self._total_weights[0]),
+                (risk_score, self._total_weights[1]),
+                (option_score, self._total_weights[2]),
+                (distance_score, self._total_weights[3]),
+            )
+        )
+        return total or 0.0
 
 
 def _normalize_weights(
@@ -197,6 +244,20 @@ def _distance_time_to_score(
         zero_score_min - full_score_min, 1.0
     )
     return _clamp_score(100.0 - (ratio * 100.0))
+
+
+def _weighted_average(
+    items: tuple[tuple[float | None, float], ...]
+) -> float | None:
+    """값이 없는 항목은 제외하고 가중 평균을 계산한다."""
+    filtered = [(value, weight) for value, weight in items if value is not None]
+    if not filtered:
+        return None
+    total_weight = sum(weight for _, weight in filtered)
+    if total_weight <= 0:
+        return None
+    total = sum(value * weight for value, weight in filtered)
+    return _clamp_score(total / total_weight)
 
 
 def _clamp_score(value: float | None) -> float:

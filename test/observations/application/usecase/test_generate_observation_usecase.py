@@ -14,9 +14,7 @@ from modules.observations.domain.value_objects.observation_notes import Observat
 from modules.observations.domain.model.student_recommendation_feature_observation import StudentRecommendationFeatureObservation
 
 
-# --------------------------
 # Mock DTOs / Bundle
-# --------------------------
 class MockHouse:
     def __init__(self):
         self.id = 1
@@ -38,9 +36,7 @@ class MockBundle:
         self.options = None  # 옵션 없으면 empty_convenience_raw 사용
 
 
-# --------------------------
 # Fixtures for ObservationRawAssembler
-# --------------------------
 @pytest.fixture
 def mock_assembler_methods():
     with patch(
@@ -74,9 +70,7 @@ def mock_assembler_methods():
         yield
 
 
-# --------------------------
 # 테스트: 정상 흐름
-# --------------------------
 def test_execute_generates_observation(mock_assembler_methods):
     # Repository / UseCase Mock
     mock_obs_repo = MagicMock()
@@ -96,9 +90,7 @@ def test_execute_generates_observation(mock_assembler_methods):
 
     observation: StudentRecommendationFeatureObservation = use_case.execute(1)
 
-    # --------------------
     # Assertions
-    # --------------------
     # House ID / Snapshot
     assert observation.house_platform_id == mock_bundle.house_platform.id
     assert observation.snapshot_id == mock_bundle.house_platform.snapshot_id
@@ -140,9 +132,7 @@ def test_execute_generates_observation(mock_assembler_methods):
     assert price_vo.가격_백분위 == 0.5
 
 
-# --------------------------
 # 테스트: 집 없으면 예외
-# --------------------------
 def test_execute_house_not_found_raises_error():
     mock_obs_repo = MagicMock()
     mock_distance_usecase = MagicMock()
@@ -157,3 +147,83 @@ def test_execute_house_not_found_raises_error():
 
     with pytest.raises(HouseNotFoundError):
         use_case.execute(999)
+
+from typing import List
+from modules.university.application.dto.university_location_dto import UniversityLocationDTO
+from modules.university.application.port.university_repository_port import UniversityRepositoryPort
+
+class MockUniversityRepo(UniversityRepositoryPort):
+    def get_all_university_names(self) -> List[str]:
+        return [f"University_{i}" for i in range(614)]
+
+    def get_university_locations(self) -> List["UniversityLocationDTO"]:
+        return [
+            UniversityLocationDTO(
+                university_location_id=i,
+                university_name=f"University_{i}",
+                campus=f"Campus_{i}",
+                lat=37.5 + i*0.001,
+                lng=127.0 + i*0.001,
+                region=None,
+                road_name_address=None,
+                jibun_address=None
+            )
+            for i in range(614)
+        ]
+
+def test_execute_generates_full_observation_with_distance_and_price(mock_assembler_methods):
+    # Repository / UseCase Mock
+    mock_obs_repo = MagicMock()
+    mock_obs_repo.save.side_effect = lambda vo: vo  # <--- 핵심
+    mock_distance_repo = MagicMock()
+    mock_distance_repo.save_bulk.side_effect = lambda vos: vos
+    mock_house_repo = MagicMock()
+    mock_bundle = MockBundle()
+    mock_house_repo.fetch_bundle_by_id.return_value = mock_bundle
+
+    # 대학 repo -> 타입 안정성 있는 Mock 사용
+    mock_university_repo = MockUniversityRepo()
+
+    # DistanceUseCase 실제 구현에 repository, 대학 repo 주입
+    from modules.observations.application.usecase.generate_distance_observation_usecase import GenerateDistanceObservationUseCase
+    distance_usecase = GenerateDistanceObservationUseCase(
+        distance_repo=mock_distance_repo,
+        house_repo=mock_house_repo,
+        university_repo=mock_university_repo,
+    )
+
+    # PriceUseCase mock
+    from modules.observations.application.usecase.generate_price_observation_usecase import GeneratePriceObservationUseCase
+    mock_price_repo = MagicMock()
+    mock_price_repo.save.side_effect = lambda vo: vo  # <--- VO 반환
+    price_usecase = GeneratePriceObservationUseCase(
+        price_repo=mock_price_repo,
+        house_prices={1: 1000}  # house_id=1 가격
+    )
+
+    # Full UseCase
+    from modules.observations.application.usecase.generate_student_recommendation_feature_observation_usecase import GenerateStudentRecommendationFeatureObservationUseCase
+    full_usecase = GenerateStudentRecommendationFeatureObservationUseCase(
+        observation_repo=mock_obs_repo,
+        distance_usecase=distance_usecase,
+        house_repo=mock_house_repo
+    )
+
+    # Execute
+    observation = full_usecase.execute(1)
+
+    # Assertions
+    assert isinstance(observation, StudentRecommendationFeatureObservation)
+    assert observation.house_platform_id == 1
+
+    # Price 생성 여부
+    price_usecase.execute(recommendation_observation_id=observation.id, house_platform_id=1)
+    mock_price_repo.save.assert_called_once()
+
+    # Distance 614개 생성 여부
+    assert mock_distance_repo.save_bulk.call_count == 1
+    saved_distances = mock_distance_repo.save_bulk.call_args[0][0]
+    assert len(saved_distances) == 614
+    first_distance = saved_distances[0]
+    assert first_distance.house_platform_id == 1
+    assert first_distance.recommendation_observation_id == observation.id
