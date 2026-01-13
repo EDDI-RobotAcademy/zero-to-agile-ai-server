@@ -17,15 +17,15 @@ class OpenAIChatAdapter(LLMPort):
 
         self._client = OpenAI(api_key=self._api_key)
 
-    def generate(self, prompt: str) -> str:
+    def generate(self, system_prompt: str, user_prompt: str) -> str:
         response = self._client.chat.completions.create(
             model=self._model,
             messages=[
                 {
                     "role": "system",
-                    "content": "당신은 간단하고 명확하게 한국어로 답변하는 어시스턴트입니다.",
+                    "content": system_prompt,
                 },
-                {"role": "user", "content": prompt},
+                {"role": "user", "content": user_prompt},
             ],
             temperature=0.4,
         )

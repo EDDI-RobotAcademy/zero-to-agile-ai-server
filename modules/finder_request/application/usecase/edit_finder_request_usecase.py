@@ -44,6 +44,13 @@ class EditFinderRequestUseCase:
         house_type: Optional[str] = None,
         additional_condition: Optional[str] = None,
         university_name: Optional[str] = None,
+        roomcount: Optional[str] = None,
+        bathroomcount: Optional[str] = None,
+        is_near: Optional[bool] = None,
+        aircon_yn: Optional[str] = None,
+        washer_yn: Optional[str] = None,
+        fridge_yn: Optional[str] = None,
+        max_building_age: Optional[int] = None,
         status: Optional[str] = None
     ) -> Optional[FinderRequestDTO]:
         """
@@ -85,7 +92,14 @@ class EditFinderRequestUseCase:
             max_rent=max_rent if max_rent is not None else existing.max_rent,
             house_type=house_type if house_type is not None else existing.house_type,
             additional_condition=additional_condition if additional_condition is not None else existing.additional_condition,
-            university_name=university_name if university_name is not None else existing.university_name
+            university_name=university_name if university_name is not None else existing.university_name,
+            roomcount=roomcount if roomcount is not None else existing.roomcount,
+            bathroomcount=bathroomcount if bathroomcount is not None else existing.bathroomcount,
+            is_near=is_near if is_near is not None else existing.is_near,
+            aircon_yn=aircon_yn if aircon_yn is not None else existing.aircon_yn,
+            washer_yn=washer_yn if washer_yn is not None else existing.washer_yn,
+            fridge_yn=fridge_yn if fridge_yn is not None else existing.fridge_yn,
+            max_building_age=max_building_age if max_building_age is not None else existing.max_building_age
         )
         
         # Repository를 통한 업데이트
@@ -108,6 +122,13 @@ class EditFinderRequestUseCase:
             house_type=updated.house_type,
             additional_condition=updated.additional_condition,
             university_name=updated.university_name,
+            roomcount=updated.roomcount,
+            bathroomcount=updated.bathroomcount,
+            is_near=updated.is_near,
+            aircon_yn=updated.aircon_yn,
+            washer_yn=updated.washer_yn,
+            fridge_yn=updated.fridge_yn,
+            max_building_age=updated.max_building_age,
             created_at=updated.created_at,
             updated_at=updated.updated_at
         )

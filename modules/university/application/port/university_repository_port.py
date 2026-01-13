@@ -12,3 +12,7 @@ class UniversityRepositoryPort(Protocol):
     def get_university_locations(self) -> List[UniversityLocationDTO]:
         """대학 위치 목록을 조회하여 반환"""
         ...
+
+    def get_unique_university_locations(self) -> List[int]:
+        """주소가 중복되지 않는 대학 위치 ID 목록을 반환"""
+        ...

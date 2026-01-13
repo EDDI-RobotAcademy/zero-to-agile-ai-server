@@ -45,11 +45,18 @@ def get_view_finder_requests_usecase(
     return ViewFinderRequestsUseCase(repository)
 
 
+from modules.send_message.adapter.input.web.dependencies import get_send_message_repository
+from modules.abang_user.adapter.input.web.dependencies import get_abang_user_repository
+from modules.send_message.application.port.output.send_message_repository import SendMessageRepository
+from modules.abang_user.application.port.abang_user_repository_port import AbangUserRepositoryPort
+
 def get_finder_request_detail_usecase(
-    repository: FinderRequestRepository = Depends(get_finder_request_repository)
+    repository: FinderRequestRepository = Depends(get_finder_request_repository),
+    message_repo: SendMessageRepository = Depends(get_send_message_repository),
+    user_repo: AbangUserRepositoryPort = Depends(get_abang_user_repository)
 ) -> GetFinderRequestDetailUseCase:
     """GetFinderRequestDetail UseCase 인스턴스 생성"""
-    return GetFinderRequestDetailUseCase(repository)
+    return GetFinderRequestDetailUseCase(repository, message_repo, user_repo)
 
 
 def get_edit_finder_request_usecase(

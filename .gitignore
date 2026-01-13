@@ -406,6 +406,7 @@ pyrightconfig.json
 
 # exclude
 *.pdf
+*.xlsx
 
 # exclude .json
 *.json
@@ -433,3 +434,5 @@ downloaded_docs/
 plan.md
 prd.md
 CLAUDE.md
+
+*.DS_Store

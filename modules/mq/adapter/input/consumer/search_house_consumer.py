@@ -1,23 +1,15 @@
 import json
-import pika
-
-from infrastructure.external.embedding_agent import OpenAIEmbeddingAgent
-from modules.finder_request.adapter.output.repository.finder_request_repository import FinderRequestRepository
-from modules.finder_request.infrastructure.repository.finder_request_embedding_repository import \
-    FinderRequestEmbeddingRepository
-from modules.mq.application.usecase.process_search_house_usecase import ProcessSearchHouseUseCase
+import time
 import os
 from dotenv import load_dotenv
-from infrastructure.db.postgres import get_db_session  # Import DB session factory used by FastAPI router
-from modules.student_house.application.usecase.recommend_student_house_for_finder_request import (
-    RecommendStudentHouseUseCase,
-)
-from modules.student_house.adapter.output.recommendation_agent import (
-    StudentHouseRecommendationAgent,
-)
-from modules.student_house.infrastructure.repository.student_house_embedding_search_repository import \
-    StudentHouseEmbeddingSearchRepository
-from modules.student_house.infrastructure.repository.student_house_search_repository import StudentHouseSearchRepository
+import pika
+import traceback
+from modules.mq.application.usecase.process_search_house_usecase import ProcessSearchHouseUseCase
+
+print("[consumer] file loaded")
+
+from infrastructure.db.postgres import get_db_session
+from modules.recommendations.application.usecase.recommend_student_house import RecommendStudentHouseUseCase
 
 
 load_dotenv()
@@ -28,75 +20,89 @@ AMQP_USER = os.getenv("AMQP_USER")
 AMQP_PASSWORD = os.getenv("AMQP_PASSWORD")
 
 QUEUE_NAME = "search.house.request"
+EXCHANGE_NAME = "recommend.exchange"
+ROUTING_KEY = "recommend.house"
+
+
+def connect_with_retry(host, user, password, retry=20, delay=2):
+    creds = pika.PlainCredentials(user, password)
+    params = pika.ConnectionParameters(
+        host=host,
+        port=AMQP_PORT,
+        credentials=creds,
+    )
+    for i in range(retry):
+        try:
+            print(f"[consumer] connecting... {i + 1}/{retry}")
+            return pika.BlockingConnection(params)
+        except Exception as e:
+            print(f"[consumer] waiting MQ... {e}")
+            time.sleep(delay)
+
+    raise Exception("RabbitMQ not reachable after retries")
+
 
 def start_search_house_consumer():
-    """
-    RabbitMQ Consumer 엔트리포인트
-    - 메시지를 받아 UseCase로 위임
-    """
-    credentials = pika.PlainCredentials(
+    connection = connect_with_retry(
+        AMQP_HOST,
         AMQP_USER,
         AMQP_PASSWORD,
-    )
-
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(
-            host=AMQP_HOST,
-            port=AMQP_PORT,
-            credentials=credentials,
-        )
+        retry=60,
+        delay=2,
     )
 
     channel = connection.channel()
+    print(f"[consumer] connected to MQ host={AMQP_HOST} queue={QUEUE_NAME}")
 
-    # 큐 선언 (Producer와 반드시 동일)
+    # EXCHANGE 선언
+    print("[consumer] declaring exchange...")
+    channel.exchange_declare(
+        exchange=EXCHANGE_NAME,
+        exchange_type="direct",
+        durable=True,
+    )
+    print("[consumer] exchange declared")
+
+    # 큐 선언
+    print("[consumer] declaring queue...")
     channel.queue_declare(queue=QUEUE_NAME, durable=True)
+    print("[consumer] queue declared")
 
-    # 한 번에 하나씩만 처리 (AI 작업 보호)
+    # 큐 바인딩
+    print("[consumer] binding queue to exchange...")
+    channel.queue_bind(
+        exchange=EXCHANGE_NAME,
+        queue=QUEUE_NAME,
+        routing_key=ROUTING_KEY,
+    )
+    print("[consumer] queue bound")
+
     channel.basic_qos(prefetch_count=1)
 
     def callback(ch, method, properties, body):
-        """
-        MQ 메시지 수신 콜백
-        """
+        print(f"[consumer][callback] raw_body={body}")
         payload = json.loads(body)
         search_house_id = payload["search_house_id"]
+        print(f"[consumer][search_house] Received search_house_id={search_house_id}")
 
         db = next(get_db_session())
 
-        # 의존성 생성 (router와 동일)
-        finder_request_repo = FinderRequestRepository(db)
-        embedding_repo = FinderRequestEmbeddingRepository()
-        search_repo = StudentHouseSearchRepository()
-        vector_repo = StudentHouseEmbeddingSearchRepository()
-        embedder = OpenAIEmbeddingAgent()
-
-        usecase = RecommendStudentHouseUseCase(
-            finder_request_repo,
-            embedding_repo,
-            search_repo,
-            vector_repo,
-            embedder,
-        )
-
-
-        print(f"[Consumer] before b-logic search_house_id={search_house_id}")
-        ai_agent = StudentHouseRecommendationAgent(usecase)
-        print(f"[Consumer] after b-logic search_house_id={search_house_id}")
-
-        usecase = ProcessSearchHouseUseCase(db, ai_agent)
-
         try:
-            usecase.execute(search_house_id)
-            # 모든 처리가 끝났을 때 ACK
-            ch.basic_ack(delivery_tag=method.delivery_tag)
+            ai_agent = RecommendStudentHouseUseCase()
 
+            # Process UseCase에 주입
+            process_usecase = ProcessSearchHouseUseCase(db, ai_agent)
+
+            print("[consumer][callback] running process_usecase...")
+            process_usecase.execute(search_house_id)
+
+            ch.basic_ack(delivery_tag=method.delivery_tag)
         except Exception as e:
-            # 실패해도 ACK (무한 재시도 방지)
-            print(f"[ERROR] search_house_id={search_house_id}, error={e}")
+            print(f"[ERROR][consumer][callback] search_house_id={search_house_id}, error={e}")
+            traceback.print_exc()
             ch.basic_ack(delivery_tag=method.delivery_tag)
-
         finally:
+            print("[consumer][callback] closing DB session")
             db.close()
 
     channel.basic_consume(
@@ -104,8 +110,10 @@ def start_search_house_consumer():
         on_message_callback=callback,
     )
 
-    print("[Consumer] search_house consumer started")
+    print("[consumer] start_consuming() now...")
+    print("[Consumer] search.house.request consuming start")
     channel.start_consuming()
+
 
 if __name__ == "__main__":
     start_search_house_consumer()

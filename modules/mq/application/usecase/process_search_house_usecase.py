@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from modules.mq.adapter.output.repository.search_house_repository import SearchHouseRepository
 from modules.finder_request.adapter.output.repository.finder_request_repository import FinderRequestRepository
+from modules.recommendations.application.dto.recommendation_dto import RecommendStudentHouseCommand
+from dataclasses import asdict
 
 
 class ProcessSearchHouseUseCase:
@@ -23,7 +25,14 @@ class ProcessSearchHouseUseCase:
 
             search_house = self.search_house_repo.get_by_id(search_house_id)
             finder_request = self.finder_request_repo.find_by_id(search_house.finder_request_id)
-            result = self.ai_agent.run(finder_request)
+
+            # UseCase 실행
+            command = RecommendStudentHouseCommand(
+                finder_request_id=finder_request.finder_request_id,
+                candidate_house_platform_ids=None
+            )
+
+            result = asdict(self.ai_agent.execute(command))
 
             self.search_house_repo.save_result(search_house_id, result)
             self.search_house_repo.mark_completed(search_house_id)

@@ -18,8 +18,17 @@ class FinderRequestResponse(BaseModel):
     house_type: Optional[str] = Field(None, description="주거 형태")
     additional_condition: Optional[str] = Field(None, description="추가 조건")
     university_name: Optional[str] = Field(None, description="대학교 이름")
+    roomcount: Optional[str] = Field(None, description="방 개수")
+    bathroomcount: Optional[str] = Field(None, description="욕실 개수")
+    # is_near: bool = Field(..., description="학교 근처 여부")
+    is_near: Optional[bool] = Field(None, description="학교 근처 여부")
+    aircon_yn: str = Field(..., description="에어컨 여부 (Y/N)")
+    washer_yn: str = Field(..., description="세탁기 여부 (Y/N)")
+    fridge_yn: str = Field(..., description="냉장고 여부 (Y/N)")
+    max_building_age: int = Field(..., description="최대 건축 연한")
     created_at: Optional[datetime] = Field(None, description="생성 시각")
     updated_at: Optional[datetime] = Field(None, description="수정 시각")
+    phone_number: Optional[str] = Field(None, description="작성자 전화번호 (권한 있는 사용자에게만 표시)")
     
     class Config:
         from_attributes = True

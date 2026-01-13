@@ -56,6 +56,13 @@ def create_finder_request(
             house_type=request.house_type,
             additional_condition=request.additional_condition,
             university_name=request.university_name,
+            roomcount=request.roomcount,
+            bathroomcount=request.bathroomcount,
+            is_near=request.is_near,
+            aircon_yn=request.aircon_yn,
+            washer_yn=request.washer_yn,
+            fridge_yn=request.fridge_yn,
+            max_building_age=request.max_building_age,
             status=request.status
         )
         
@@ -74,6 +81,13 @@ def create_finder_request(
             house_type=result.house_type,
             additional_condition=result.additional_condition,
             university_name=result.university_name,
+            roomcount=result.roomcount,
+            bathroomcount=result.bathroomcount,
+            is_near=result.is_near,
+            aircon_yn=result.aircon_yn,
+            washer_yn=result.washer_yn,
+            fridge_yn=result.fridge_yn,
+            max_building_age=result.max_building_age,
             created_at=result.created_at,
             updated_at=result.updated_at
         )
@@ -116,6 +130,13 @@ def view_finder_requests(
                 house_type=result.house_type,
                 additional_condition=result.additional_condition,
                 university_name=result.university_name,
+                roomcount=result.roomcount,
+                bathroomcount=result.bathroomcount,
+                is_near=result.is_near,
+                aircon_yn=result.aircon_yn,
+                washer_yn=result.washer_yn,
+                fridge_yn=result.fridge_yn,
+                max_building_age=result.max_building_age,
                 created_at=result.created_at,
                 updated_at=result.updated_at
             )
@@ -136,24 +157,22 @@ def view_finder_requests(
 )
 def get_finder_request_detail(
     finder_request_id: int,
+    abang_user_id: int = Depends(auth_required),
     usecase: GetFinderRequestDetailUseCase = Depends(get_finder_request_detail_usecase)
 ):
     """
     요구서의 상세 정보를 조회합니다.
     
     - **finder_request_id**: 요구서 ID (path parameter)
+    - **abang_user_id**: 조회자 ID (권한 확인용)
     """
     try:
-        # UseCase 실행
-        result = usecase.execute(finder_request_id)
+        # UseCase 실행 (viewer_id 전달)
+        result = usecase.execute(finder_request_id, abang_user_id)
         
-        # 요구서가 없으면 404 반환
         if not result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"요구서 ID {finder_request_id}를 찾을 수 없습니다."
-            )
-        
+             raise HTTPException(status_code=404, detail="Finder request not found")
+
         # Application DTO → Web Response DTO 변환
         return FinderRequestResponse(
             finder_request_id=result.finder_request_id,
@@ -166,8 +185,16 @@ def get_finder_request_detail(
             house_type=result.house_type,
             additional_condition=result.additional_condition,
             university_name=result.university_name,
+            roomcount=result.roomcount,
+            bathroomcount=result.bathroomcount,
+            is_near=result.is_near,
+            aircon_yn=result.aircon_yn,
+            washer_yn=result.washer_yn,
+            fridge_yn=result.fridge_yn,
+            max_building_age=result.max_building_age,
             created_at=result.created_at,
-            updated_at=result.updated_at
+            updated_at=result.updated_at,
+            phone_number=result.phone_number
         )
     except HTTPException:
         raise
@@ -214,6 +241,13 @@ def edit_finder_request(
             house_type=request.house_type,
             additional_condition=request.additional_condition,
             university_name=request.university_name,
+            roomcount=request.roomcount,
+            bathroomcount=request.bathroomcount,
+            is_near=request.is_near,
+            aircon_yn=request.aircon_yn,
+            washer_yn=request.washer_yn,
+            fridge_yn=request.fridge_yn,
+            max_building_age=request.max_building_age,
             status=request.status
         )
         
@@ -235,6 +269,13 @@ def edit_finder_request(
             house_type=result.house_type,
             additional_condition=result.additional_condition,
             university_name=result.university_name,
+            roomcount=result.roomcount,
+            bathroomcount=result.bathroomcount,
+            is_near=result.is_near,
+            aircon_yn=result.aircon_yn,
+            washer_yn=result.washer_yn,
+            fridge_yn=result.fridge_yn,
+            max_building_age=result.max_building_age,
             created_at=result.created_at,
             updated_at=result.updated_at
         )

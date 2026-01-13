@@ -55,6 +55,13 @@ class CreateFinderRequestUseCase:
             house_type=dto.house_type,
             additional_condition=dto.additional_condition,
             university_name=dto.university_name,
+            roomcount=dto.roomcount,
+            bathroomcount=dto.bathroomcount,
+            is_near=dto.is_near,
+            aircon_yn=dto.aircon_yn,
+            washer_yn=dto.washer_yn,
+            fridge_yn=dto.fridge_yn,
+            max_building_age=dto.max_building_age,
             created_at=None,
             updated_at=None
         )
@@ -62,7 +69,7 @@ class CreateFinderRequestUseCase:
         # Repository를 통한 영속화
         created = self.finder_request_repository.create(finder_request)
 
-        self._upsert_embedding(created)
+        # self._upsert_embedding(created)
         
         # 결과를 DTO로 변환하여 반환
         return FinderRequestDTO(
@@ -76,20 +83,27 @@ class CreateFinderRequestUseCase:
             house_type=created.house_type,
             additional_condition=created.additional_condition,
             university_name=created.university_name,
+            roomcount=created.roomcount,
+            bathroomcount=created.bathroomcount,
+            is_near=created.is_near,
+            aircon_yn=created.aircon_yn,
+            washer_yn=created.washer_yn,
+            fridge_yn=created.fridge_yn,
+            max_building_age=created.max_building_age,
             created_at=created.created_at,
             updated_at=created.updated_at
         )
 
-    def _upsert_embedding(self, request: FinderRequest) -> None:
-        """요구서 임베딩을 저장한다."""
-        if not self.embedding_repository or not self.embedder:
-            return
-        text = build_finder_request_embedding_text(request)
-        embedding = _run_async(self.embedder.embed_texts([text]))
-        if embedding:
-            self.embedding_repository.upsert_embedding(
-                request.finder_request_id, embedding[0]
-            )
+    # def _upsert_embedding(self, request: FinderRequest) -> None:
+    #     """요구서 임베딩을 저장한다."""
+    #     if not self.embedding_repository or not self.embedder:
+    #         return
+    #     text = build_finder_request_embedding_text(request)
+    #     embedding = _run_async(self.embedder.embed_texts([text]))
+    #     if embedding:
+    #         self.embedding_repository.upsert_embedding(
+    #             request.finder_request_id, embedding[0]
+    #         )
 
 
 def _run_async(coro):

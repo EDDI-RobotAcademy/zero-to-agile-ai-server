@@ -7,6 +7,7 @@ class AbangUser(Base):
     abang_user_id = Column(Integer, primary_key=True, autoincrement=True)
     nickname = Column(String(255), nullable=True)
     phone_number = Column(String(11), nullable=True)
+    university_name = Column(String(50), nullable=True)
     email = Column(String(100), nullable=False, unique=True)
     user_type = Column(String(20), nullable=False)
     created_at = Column(DateTime, server_default=func.now())

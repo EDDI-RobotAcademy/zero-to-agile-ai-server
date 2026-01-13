@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict
-from typing import Iterable, Sequence, Set
+from typing import Iterable, Sequence, Set, Optional, List
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from infrastructure.db.postgres import get_db_session
 from infrastructure.db.session_helper import open_session
+from modules.house_platform.domain.house_platform import HousePlatform
 from modules.house_platform.application.dto.fetch_and_store_dto import (
     HousePlatformUpsertBundle,
 )
@@ -43,6 +44,159 @@ class HousePlatformRepository(HousePlatformRepositoryPort):
 
     def __init__(self, session_factory=None):
         self._session_factory = session_factory or get_db_session
+
+    def _to_domain(self, orm: HousePlatformORM) -> HousePlatform:
+        return HousePlatform(
+            house_platform_id=orm.house_platform_id,
+            title=orm.title,
+            address=orm.address,
+            deposit=orm.deposit,
+            domain_id=orm.domain_id,
+            rgst_no=orm.rgst_no,
+            sales_type=orm.sales_type,
+            monthly_rent=orm.monthly_rent,
+            room_type=orm.room_type,
+            contract_area=float(orm.contract_area) if orm.contract_area is not None else None,
+            exclusive_area=float(orm.exclusive_area) if orm.exclusive_area is not None else None,
+            floor_no=orm.floor_no,
+            all_floors=orm.all_floors,
+            lat_lng=orm.lat_lng,
+            manage_cost=orm.manage_cost,
+            can_park=orm.can_park,
+            has_elevator=orm.has_elevator,
+            image_urls=orm.image_urls,
+            pnu_cd=orm.pnu_cd,
+            is_banned=orm.is_banned,
+            residence_type=orm.residence_type,
+            gu_nm=orm.gu_nm,
+            dong_nm=orm.dong_nm,
+            registered_at=orm.registered_at,
+            crawled_at=None,
+            snapshot_id=orm.snapshot_id,
+            abang_user_id=orm.abang_user_id,
+            created_at=orm.created_at,
+            updated_at=orm.updated_at
+        )
+
+    def save(self, house_platform: HousePlatform) -> HousePlatform:
+        """도메인 객체를 저장하거나 업데이트한다."""
+        session, generator = open_session(self._session_factory)
+        try:
+            if house_platform.house_platform_id:
+                orm = session.query(HousePlatformORM).filter(HousePlatformORM.house_platform_id == house_platform.house_platform_id).one_or_none()
+                if orm:
+                    orm.title = house_platform.title
+                    orm.address = house_platform.address
+                    orm.deposit = house_platform.deposit
+                    orm.domain_id = house_platform.domain_id
+                    orm.rgst_no = house_platform.rgst_no
+                    orm.sales_type = house_platform.sales_type
+                    orm.monthly_rent = house_platform.monthly_rent
+                    orm.room_type = house_platform.room_type
+                    orm.contract_area = house_platform.contract_area
+                    orm.exclusive_area = house_platform.exclusive_area
+                    orm.floor_no = house_platform.floor_no
+                    orm.all_floors = house_platform.all_floors
+                    orm.lat_lng = house_platform.lat_lng
+                    orm.manage_cost = house_platform.manage_cost
+                    orm.can_park = house_platform.can_park
+                    orm.has_elevator = house_platform.has_elevator
+                    orm.image_urls = house_platform.image_urls
+                    orm.pnu_cd = house_platform.pnu_cd
+                    orm.is_banned = house_platform.is_banned
+                    orm.residence_type = house_platform.residence_type
+                    orm.gu_nm = house_platform.gu_nm
+                    orm.dong_nm = house_platform.dong_nm
+                    orm.snapshot_id = house_platform.snapshot_id
+                    # abang_user_id is generally immutable
+                    session.commit()
+                    session.refresh(orm)
+                    return self._to_domain(orm)
+            
+            # Create
+            orm = HousePlatformORM(
+                title=house_platform.title,
+                address=house_platform.address,
+                deposit=house_platform.deposit,
+                domain_id=house_platform.domain_id,
+                rgst_no=house_platform.rgst_no,
+                sales_type=house_platform.sales_type,
+                monthly_rent=house_platform.monthly_rent,
+                room_type=house_platform.room_type,
+                contract_area=house_platform.contract_area,
+                exclusive_area=house_platform.exclusive_area,
+                floor_no=house_platform.floor_no,
+                all_floors=house_platform.all_floors,
+                lat_lng=house_platform.lat_lng,
+                manage_cost=house_platform.manage_cost,
+                can_park=house_platform.can_park,
+                has_elevator=house_platform.has_elevator,
+                image_urls=house_platform.image_urls,
+                pnu_cd=house_platform.pnu_cd,
+                is_banned=house_platform.is_banned,
+                residence_type=house_platform.residence_type,
+                gu_nm=house_platform.gu_nm,
+                dong_nm=house_platform.dong_nm,
+                snapshot_id=house_platform.snapshot_id,
+                abang_user_id=house_platform.abang_user_id
+            )
+            session.add(orm)
+            session.commit()
+            session.refresh(orm)
+            return self._to_domain(orm)
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            if generator:
+                generator.close()
+            else:
+                session.close()
+
+    def find_by_id(self, house_platform_id: int) -> Optional[HousePlatform]:
+        """ID로 도메인 객체를 조회한다."""
+        session, generator = open_session(self._session_factory)
+        try:
+            orm = session.query(HousePlatformORM).filter(HousePlatformORM.house_platform_id == house_platform_id).one_or_none()
+            if orm:
+                return self._to_domain(orm)
+            return None
+        finally:
+            if generator:
+                generator.close()
+            else:
+                session.close()
+
+    def find_all_by_user_id(self, abang_user_id: int) -> List[HousePlatform]:
+        """사용자 ID로 모든 매물을 조회한다."""
+        session, generator = open_session(self._session_factory)
+        try:
+            orms = session.query(HousePlatformORM).filter(HousePlatformORM.abang_user_id == abang_user_id).all()
+            return [self._to_domain(orm) for orm in orms]
+        finally:
+            if generator:
+                generator.close()
+            else:
+                session.close()
+
+    def delete(self, house_platform_id: int) -> bool:
+        """ID로 매물을 영구 삭제한다."""
+        session, generator = open_session(self._session_factory)
+        try:
+            orm = session.query(HousePlatformORM).filter(HousePlatformORM.house_platform_id == house_platform_id).one_or_none()
+            if orm:
+                session.delete(orm)
+                session.commit()
+                return True
+            return False
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            if generator:
+                generator.close()
+            else:
+                session.close()
 
     def exists_rgst_nos(self, rgst_nos: Iterable[str]) -> Set[str]:
         """이미 저장된 rgst_no를 조회한다."""

@@ -22,6 +22,8 @@ class RabbitMQProducer(MessageQueuePort):
         self.queue = "search.house.request"
         self.routing_key = "recommend.house"
 
+        print("[producer] AMQP target:", self.host)
+
     def publish_search_house(self, search_house_id: int) -> None:
         """
         Producer Step 2:
@@ -52,12 +54,13 @@ class RabbitMQProducer(MessageQueuePort):
         )
 
         body = json.dumps({"search_house_id": search_house_id})
-
+        print("[producer] publish_search_house called", search_house_id)
+        channel.confirm_delivery()
         channel.basic_publish(
             exchange=self.exchange,
             routing_key=self.routing_key,
             body=body,
             properties=pika.BasicProperties(delivery_mode=2),  # persistent message
         )
-
+        print("[producer] after publish, OK")
         connection.close()

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 class UniversityLocationDTO:
     """대학 위치 정보 DTO."""
 
+    university_location_id: int
     university_name: str
     campus: str
     lat: float

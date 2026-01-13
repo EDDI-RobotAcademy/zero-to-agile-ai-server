@@ -1,10 +1,10 @@
 from typing import Optional
-from modules.house_platform.application.port.output.house_platform_repository import HousePlatformRepository
+from modules.house_platform.application.port_out.house_platform_repository_port import HousePlatformRepositoryPort
 from modules.house_platform.application.dto.house_platform_dto import HousePlatformUpdateRequest
 from modules.house_platform.domain.house_platform import HousePlatform
 
 class UpdateHousePlatformUseCase:
-    def __init__(self, repository: HousePlatformRepository):
+    def __init__(self, repository: HousePlatformRepositoryPort):
         self.repository = repository
 
     def execute(self, user_id: int, house_platform_id: int, request: HousePlatformUpdateRequest) -> Optional[HousePlatform]:

@@ -38,7 +38,14 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
                 status=finder_request.status,
                 house_type=finder_request.house_type,
                 additional_condition=finder_request.additional_condition,
-                university_name=finder_request.university_name
+                university_name=finder_request.university_name,
+                roomcount=finder_request.roomcount,
+                bathroomcount=finder_request.bathroomcount,
+                is_near=finder_request.is_near,
+                aircon_yn=finder_request.aircon_yn,
+                washer_yn=finder_request.washer_yn,
+                fridge_yn=finder_request.fridge_yn,
+                max_building_age=finder_request.max_building_age
             )
             
             self.db.add(model)
@@ -48,7 +55,8 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
             # ORM 모델 → 도메인 모델 변환
             return self._to_domain(model)
         finally:
-            self.db.close()
+            pass
+            # self.db.close()
     
     def find_by_id(self, finder_request_id: int) -> Optional[FinderRequest]:
         """
@@ -86,6 +94,13 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
             house_type=model.house_type,
             additional_condition=model.additional_condition,
             university_name=model.university_name,
+            roomcount=model.roomcount,
+            bathroomcount=model.bathroomcount,
+            is_near=model.is_near,
+            aircon_yn=model.aircon_yn,
+            washer_yn=model.washer_yn,
+            fridge_yn=model.fridge_yn,
+            max_building_age=model.max_building_age,
             created_at=model.created_at,
             updated_at=model.updated_at
         )
@@ -93,10 +108,10 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
     def find_by_user_id(self, abang_user_id: int) -> List[FinderRequest]:
         """
         사용자 ID로 요구서 목록 조회 (모든 status 포함)
-        
+
         Args:
             abang_user_id: 임차인 사용자 ID
-            
+
         Returns:
             요구서 도메인 모델 리스트
         """
@@ -105,18 +120,19 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
             models = self.db.query(FinderRequestModel).filter(
                 FinderRequestModel.abang_user_id == abang_user_id
             ).order_by(FinderRequestModel.created_at.desc()).all()
-            
+
             return [self._to_domain(model) for model in models]
         finally:
-            self.db.close()
+            pass
+            #self.db.close()
     
     def update(self, finder_request: FinderRequest) -> Optional[FinderRequest]:
         """
         요구서 수정
-        
+
         Args:
             finder_request: 수정할 요구서 도메인 모델 (ID 포함)
-            
+
         Returns:
             수정된 요구서 또는 None (존재하지 않는 경우)
         """
@@ -144,6 +160,20 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
                 model.additional_condition = finder_request.additional_condition
             if finder_request.university_name is not None:
                 model.university_name = finder_request.university_name
+            if finder_request.roomcount is not None:
+                model.roomcount = finder_request.roomcount
+            if finder_request.bathroomcount is not None:
+                model.bathroomcount = finder_request.bathroomcount
+            if finder_request.is_near is not None:
+                model.is_near = finder_request.is_near
+            if finder_request.aircon_yn is not None:
+                model.aircon_yn = finder_request.aircon_yn
+            if finder_request.washer_yn is not None:
+                model.washer_yn = finder_request.washer_yn
+            if finder_request.fridge_yn is not None:
+                model.fridge_yn = finder_request.fridge_yn
+            if finder_request.max_building_age is not None:
+                model.max_building_age = finder_request.max_building_age
             if finder_request.status is not None:
                 model.status = finder_request.status
 
@@ -152,7 +182,8 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
 
             return self._to_domain(model)
         finally:
-            self.db.close()
+            pass
+            #self.db.close()
     
     def delete(self, finder_request_id: int) -> bool:
         """
@@ -204,7 +235,7 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
             
             print(f"✅ [HARD DELETE] 삭제 성공: finder_request_id={finder_request_id} row가 완전히 제거됨")
             return True
-            
+
         except Exception as e:
             # ✅ 예외 발생 시 롤백 및 실패 반환
             print(f"❌ [HARD DELETE] 예외 발생: {type(e).__name__}: {str(e)}")
@@ -213,4 +244,5 @@ class FinderRequestRepository(FinderRequestRepositoryPort):
             self.db.rollback()
             return False
         finally:
-            self.db.close()
+            pass
+            #self.db.close()
