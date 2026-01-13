@@ -5,8 +5,9 @@ Outbound Adapter (Persistence)
 """
 from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, update
 from infrastructure.orm.search_house import SearchHouse
+import json
 
 
 class SearchHouseRepository:
@@ -63,13 +64,29 @@ class SearchHouseRepository:
 
     # job 산출물 저장
     def save_result(self, search_house_id: int, result: dict):
-        self.db.query(SearchHouse).filter(
-            SearchHouse.search_house_id == search_house_id
-        ).update({
-            "result_json": result,
-            "completed_at": datetime.utcnow()
-        })
+        # dataclass → dict 변환
+        result_dict = result.dict() if hasattr(result, "dict") else result
+
+        # datetime ISO 변환을 위해 ensure_ascii + default=str 사용
+        result_json = json.dumps(result_dict, default=str)
+
+        self.db.execute(
+            update(SearchHouse)
+            .where(SearchHouse.search_house_id == search_house_id)
+            .values(
+                result_json=result_json,
+                completed_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+        )
         self.db.commit()
+        # self.db.query(SearchHouse).filter(
+        #     SearchHouse.search_house_id == search_house_id
+        # ).update({
+        #     "result_json": result,
+        #     "completed_at": datetime.utcnow()
+        # })
+        # self.db.commit()
 
     # job 성공 종료, B가 메시지를 받았다는 ACK를 받으면 호출
     def mark_completed(self, search_house_id: int):
@@ -94,9 +111,11 @@ class SearchHouseRepository:
             .one_or_none()
         )
 
-    def get_finder_request_id_by_id(self, search_house_id: int):
-        return (
+    def get_finder_request_id_by_id(self, search_house_id: int) -> int | None:
+        row = (
             self.db.query(SearchHouse.finder_request_id)
             .filter(SearchHouse.search_house_id == search_house_id)
             .one_or_none()
         )
+
+        return row[0] if row else None

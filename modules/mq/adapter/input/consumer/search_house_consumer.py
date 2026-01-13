@@ -4,22 +4,12 @@ import os
 from dotenv import load_dotenv
 import pika
 import traceback
+from modules.mq.application.usecase.process_search_house_usecase import ProcessSearchHouseUseCase
 
 print("[consumer] file loaded")
 
 from infrastructure.db.postgres import get_db_session
-from modules.mq.adapter.output.repository.search_house_repository import SearchHouseRepository
 from modules.recommendations.application.usecase.recommend_student_house import RecommendStudentHouseUseCase
-
-
-# --- 의존성 추가 ---
-# from modules.finder_request.adapter.output.repository.finder_request_repository import FinderRequestRepository
-# from modules.house_platform.adapter.output.repository.house_platform_repository import HousePlatformRepository
-# from modules.student_house_decision_policy.adapter.output.repository.student_house_score_repository import StudentHouseScoreRepository
-# from modules.decision_context_signal_builder.adapter.output.repository.observation_repository import StudentRecommendationFeatureObservationRepository
-# from modules.recommendations.application.usecase.recommend_student_house import RecommendStudentHouseUseCase
-
-
 
 
 load_dotenv()
@@ -96,18 +86,15 @@ def start_search_house_consumer():
         print(f"[consumer][search_house] Received search_house_id={search_house_id}")
 
         db = next(get_db_session())
-        search_house_repo = SearchHouseRepository(db)
 
         try:
-            finder_request_id = search_house_repo.get_finder_request_id_by_id(search_house_id)
-            print(f"[consumer][callback] mapped {search_house_id} -> finder_request_id={finder_request_id}")
-
             ai_agent = RecommendStudentHouseUseCase()
-            result_json = ai_agent.execute(finder_request_id)
-            print(f"[consumer][callback] recommend result received {result_json}")
 
-            search_house_repo.save_result(search_house_id, result_json)
-            print("[consumer][callback] saved result successfully")
+            # Process UseCase에 주입
+            process_usecase = ProcessSearchHouseUseCase(db, ai_agent)
+
+            print("[consumer][callback] running process_usecase...")
+            process_usecase.execute(search_house_id)
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
         except Exception as e:
