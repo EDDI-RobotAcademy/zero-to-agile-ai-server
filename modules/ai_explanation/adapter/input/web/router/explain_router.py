@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from modules.ai_explanation.adapter.input.web.request.owner_request import OwnerExplanationRequest
-from modules.ai_explanation.adapter.input.web.response.ai_response import AiResponse
+from modules.ai_explanation.adapter.input.web.response.owner_response import AiResponse
 from modules.ai_explanation.application.usecase.explain_owner_usecase import ExplainOwnerUseCase
 
 router = APIRouter(prefix="/explain", tags=["AI Explanation"])
