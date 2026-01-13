@@ -1,4 +1,4 @@
-from sqlalchemy import insert
+from sqlalchemy import func, insert
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -36,10 +36,33 @@ class StudentRecommendationDistanceObservationRepository(DistanceObservationRepo
         self.db_session.commit()
 
     def get_bulk_by_house_platform_id(self, house_platform_id: int) -> List[DistanceFeatureObservation]:
-        """매물 ID로 거리 관측치 목록 조회"""
-        orms = self.db_session.query(StudentRecommendationDistanceObservationORM) \
-            .filter(StudentRecommendationDistanceObservationORM.house_id == house_platform_id) \
+        """매물 ID 기준으로 대학별 최신 거리 관측치를 조회한다."""
+        row_number = func.row_number().over(
+            partition_by=StudentRecommendationDistanceObservationORM.university_id,
+            order_by=(
+                StudentRecommendationDistanceObservationORM.calculated_at.desc(),
+                StudentRecommendationDistanceObservationORM.id.desc(),
+            ),
+        ).label("rn")
+        latest_ids_subq = (
+            self.db_session.query(
+                StudentRecommendationDistanceObservationORM.id.label("id"),
+                row_number,
+            )
+            .filter(
+                StudentRecommendationDistanceObservationORM.house_id == house_platform_id
+            )
+            .subquery()
+        )
+        orms = (
+            self.db_session.query(StudentRecommendationDistanceObservationORM)
+            .join(
+                latest_ids_subq,
+                StudentRecommendationDistanceObservationORM.id == latest_ids_subq.c.id,
+            )
+            .filter(latest_ids_subq.c.rn == 1)
             .all()
+        )
 
         return [
             DistanceFeatureObservation(

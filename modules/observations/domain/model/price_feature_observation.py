@@ -22,8 +22,8 @@ class PriceFeatureObservation:
         if self.가격_백분위 is not None and not (0.0 <= self.가격_백분위 <= 1.0):
             raise ValueError(f"가격 백분위는 0 이상 1 이하이어야 합니다. 입력값: {self.가격_백분위}")
 
-        if self.가격_z점수 is not None and not (-10.0 <= self.가격_z점수 <= 10.0):
-            raise ValueError(f"가격 z점수는 -10~10 사이여야 합니다. 입력값: {self.가격_z점수}")
+        # if self.가격_z점수 is not None and not (-10.0 <= self.가격_z점수 <= 10.0):
+        #     raise ValueError(f"가격 z점수는 -10~10 사이여야 합니다. 입력값: {self.가격_z점수}")
 
         if self.예상_입주비용 < 0:
             raise ValueError(f"예상 입주비용은 0 이상이어야 합니다. 입력값: {self.예상_입주비용}")

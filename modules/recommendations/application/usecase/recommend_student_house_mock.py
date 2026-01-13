@@ -5,21 +5,33 @@ from datetime import datetime, timezone
 from typing import Any
 
 from modules.house_platform.domain.house_platform import HousePlatform
+from modules.observations.domain.model.distance_feature_observation import (
+    DistanceFeatureObservation,
+)
+from modules.observations.domain.model.price_feature_observation import (
+    PriceFeatureObservation,
+)
 from modules.observations.domain.model.student_recommendation_feature_observation import (
     StudentRecommendationFeatureObservation,
-    ObservationMetadata,
-#    PriceObservationFeatures,
- #   DistanceObservationFeatures,
-    RiskObservationFeatures,
+)
+from modules.observations.domain.value_objects.convenience_observation_features import (
     ConvenienceObservationFeatures,
+)
+from modules.observations.domain.value_objects.observation_metadata import (
+    ObservationMetadata,
+)
+from modules.observations.domain.value_objects.observation_notes import (
     ObservationNotes,
+)
+from modules.observations.domain.value_objects.risk_observation_features import (
+    RiskObservationFeatures,
 )
 from modules.recommendations.application.dto.recommendation_dto import (
     RecommendStudentHouseMockCommand,
     RecommendStudentHouseMockResponse,
 )
 from modules.recommendations.application.usecase.recommend_student_house import (
-    RecommendStudentHouseService,
+    RecommendStudentHouseUseCase,
 )
 from modules.student_house_decision_policy.application.dto.decision_score_dto import (
     StudentHouseScoreSummary,
@@ -29,7 +41,7 @@ from modules.student_house_decision_policy.domain.value_object.decision_policy_c
 )
 
 
-class RecommendStudentHouseMockService(RecommendStudentHouseService):
+class RecommendStudentHouseMockService(RecommendStudentHouseUseCase):
     """추천 임시 응답을 생성한다."""
 
     def __init__(self, *args, **kwargs):
@@ -78,6 +90,7 @@ class RecommendStudentHouseMockService(RecommendStudentHouseService):
             self._build_rank_seed(
                 recommended_candidates, base_score=80.0
             ),
+            request,
             policy,
             decision_status="RECOMMENDED",
         )
@@ -85,6 +98,7 @@ class RecommendStudentHouseMockService(RecommendStudentHouseService):
             self._build_rank_seed(
                 rejected_candidates, base_score=40.0
             ),
+            request,
             policy,
             decision_status="REJECTED",
         )
@@ -167,35 +181,26 @@ class RecommendStudentHouseMockService(RecommendStudentHouseService):
         raw.pop("crawled_at", None)
         return raw
 
-    def _fetch_observation(self, house_platform_id: int):
-        observation = super()._fetch_observation(house_platform_id)
+    def _fetch_feature_observation(self, house_platform_id: int):
+        try:
+            observation = super()._fetch_feature_observation(
+                house_platform_id
+            )
+        except AttributeError:
+            observation = None
         if observation:
             return observation
         candidate = self._candidate_map.get(house_platform_id)
         monthly_rent = candidate.monthly_rent if candidate else 0
         manage_cost = candidate.manage_cost if candidate else 0
         deposit = candidate.deposit if candidate else 0
-        estimated_move_in_cost = deposit + monthly_rent + manage_cost
-        monthly_cost_est = monthly_rent + manage_cost
         snapshot_id = (
             candidate.snapshot_id if candidate else f"mock-{house_platform_id}"
         )
         return StudentRecommendationFeatureObservation(
-            platform_id=house_platform_id,
+            id=None,
+            house_platform_id=house_platform_id,
             snapshot_id=snapshot_id,
-            가격_관측치=PriceObservationFeatures(
-                가격_백분위=0.5,
-                가격_z점수=0.0,
-                예상_입주비용=estimated_move_in_cost,
-                월_비용_추정=monthly_cost_est,
-                가격_부담_비선형=0.5,
-            ),
-            거리_관측치=DistanceObservationFeatures(
-                학교까지_분=20.0,
-                거리_백분위=0.5,
-                거리_버킷="10_20",
-                거리_비선형_점수=0.5,
-            ),
             위험_관측치=RiskObservationFeatures(
                 위험_사건_개수=0,
                 위험_사건_유형=[],
@@ -214,3 +219,36 @@ class RecommendStudentHouseMockService(RecommendStudentHouseService):
             ),
             calculated_at=datetime.now(timezone.utc),
         )
+
+    def _fetch_price_observation(self, house_platform_id: int):
+        candidate = self._candidate_map.get(house_platform_id)
+        monthly_rent = candidate.monthly_rent if candidate else 0
+        manage_cost = candidate.manage_cost if candidate else 0
+        deposit = candidate.deposit if candidate else 0
+        estimated_move_in_cost = deposit + monthly_rent + manage_cost
+        monthly_cost_est = monthly_rent + manage_cost
+        return PriceFeatureObservation(
+            id=1,
+            house_platform_id=house_platform_id,
+            recommendation_observation_id=1,
+            가격_백분위=0.5,
+            가격_z점수=0.0,
+            예상_입주비용=estimated_move_in_cost,
+            월_비용_추정=monthly_cost_est,
+            가격_부담_비선형=0.5,
+        )
+
+    def _fetch_distance_observations(self, house_platform_id: int):
+        return [
+            DistanceFeatureObservation(
+                id=1,
+                house_platform_id=house_platform_id,
+                recommendation_observation_id=1,
+                university_id=1,
+                학교까지_분=20.0,
+                거리_백분위=0.5,
+                거리_버킷="10_20분",
+                거리_비선형_점수=0.5,
+                calculated_at=datetime.now(timezone.utc),
+            )
+        ]

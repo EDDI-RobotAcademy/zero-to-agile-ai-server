@@ -10,7 +10,7 @@ class RecommendStudentHouseCommand:
     """학생 매물 추천 요청 커맨드."""
 
     finder_request_id: int
-    candidate_house_platform_ids: list[int]
+    candidate_house_platform_ids: list[int] | None = None
 
 
 @dataclass(frozen=True)

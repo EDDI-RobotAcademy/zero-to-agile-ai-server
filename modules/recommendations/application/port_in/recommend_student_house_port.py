@@ -14,6 +14,6 @@ class RecommendStudentHousePort(ABC):
     @abstractmethod
     def execute(
         self, command: RecommendStudentHouseCommand
-    ) -> RecommendStudentHouseResult | None:
+    ) -> RecommendStudentHouseResult:
         """추천 결과를 생성한다."""
         raise NotImplementedError

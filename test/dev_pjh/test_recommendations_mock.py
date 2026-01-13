@@ -11,14 +11,11 @@ if PROJECT_ROOT not in sys.path:
 
 from modules.house_platform.domain.house_platform import HousePlatform
 from modules.finder_request.domain.finder_request import FinderRequest
-from modules.observations.domain.model.student_recommendation_feature_observation import (
-    StudentRecommendationFeatureObservation,
-)
 from modules.observations.domain.value_objects.convenience_observation_features import (
     ConvenienceObservationFeatures,
 )
-from modules.observations.domain.value_objects.distance_observation_features import (
-    DistanceObservationFeatures,
+from modules.observations.domain.model.student_recommendation_feature_observation import (
+    StudentRecommendationFeatureObservation,
 )
 from modules.observations.domain.value_objects.observation_metadata import (
     ObservationMetadata,
@@ -26,17 +23,20 @@ from modules.observations.domain.value_objects.observation_metadata import (
 from modules.observations.domain.value_objects.observation_notes import (
     ObservationNotes,
 )
-from modules.observations.domain.value_objects.price_observation_features import (
-    PriceObservationFeatures,
-)
 from modules.observations.domain.value_objects.risk_observation_features import (
     RiskObservationFeatures,
+)
+from modules.observations.domain.model.price_feature_observation import (
+    PriceFeatureObservation,
+)
+from modules.observations.domain.model.distance_feature_observation import (
+    DistanceFeatureObservation,
 )
 from modules.recommendations.application.dto.recommendation_dto import (
     RecommendStudentHouseCommand,
 )
 from modules.recommendations.application.usecase.recommend_student_house import (
-    RecommendStudentHouseService,
+    RecommendStudentHouseUseCase,
 )
 from modules.recommendations.application.usecase.recommend_student_house_mock import (
     RecommendStudentHouseMockService,
@@ -124,7 +124,7 @@ class FakeObservationRepository:
     def __init__(self, observations):
         self._observations = observations
 
-    def find_latest(self, house_platform_id: int):
+    def find_latest_by_house_id(self, house_platform_id: int):
         return self._observations.get(house_platform_id)
 
 
@@ -143,26 +143,29 @@ class FakeScoreRepository:
             )
         ]
 
+class FakePriceObservationRepository:
+    def __init__(self, observations):
+        self._observations = observations
+
+    def get_by_house_platform_id(self, house_platform_id: int):
+        return self._observations.get(house_platform_id)
+
+
+class FakeDistanceObservationRepository:
+    def __init__(self, observations):
+        self._observations = observations
+
+    def get_bulk_by_house_platform_id(self, house_platform_id: int):
+        return self._observations.get(house_platform_id, [])
+
 
 def _build_observation(
     house_platform_id: int, snapshot_id: str
 ) -> StudentRecommendationFeatureObservation:
     return StudentRecommendationFeatureObservation(
-        platform_id=house_platform_id,
+        id=1,
+        house_platform_id=house_platform_id,
         snapshot_id=snapshot_id,
-        가격_관측치=PriceObservationFeatures(
-            가격_백분위=0.2,
-            가격_z점수=-0.5,
-            예상_입주비용=800,
-            월_비용_추정=60,
-            가격_부담_비선형=0.4,
-        ),
-        거리_관측치=DistanceObservationFeatures(
-            학교까지_분=15.0,
-            거리_백분위=0.2,
-            거리_버킷="0_20",
-            거리_비선형_점수=0.8,
-        ),
         위험_관측치=RiskObservationFeatures(
             위험_사건_개수=0,
             위험_사건_유형=["NONE"],
@@ -199,6 +202,56 @@ def test_recommend_student_house_mock():
         1: _build_observation(1, "snap-1"),
         2: _build_observation(2, "snap-2"),
     }
+    price_observations = {
+        1: PriceFeatureObservation(
+            id=1,
+            house_platform_id=1,
+            recommendation_observation_id=1,
+            가격_백분위=0.2,
+            가격_z점수=-0.5,
+            예상_입주비용=800,
+            월_비용_추정=60,
+            가격_부담_비선형=0.4,
+        ),
+        2: PriceFeatureObservation(
+            id=2,
+            house_platform_id=2,
+            recommendation_observation_id=1,
+            가격_백분위=0.8,
+            가격_z점수=0.6,
+            예상_입주비용=1500,
+            월_비용_추정=120,
+            가격_부담_비선형=0.8,
+        ),
+    }
+    distance_observations = {
+        1: [
+            DistanceFeatureObservation(
+                id=1,
+                house_platform_id=1,
+                recommendation_observation_id=1,
+                university_id=1,
+                학교까지_분=15.0,
+                거리_백분위=0.2,
+                거리_버킷="10_20분",
+                거리_비선형_점수=0.8,
+                calculated_at=datetime.now(timezone.utc),
+            )
+        ],
+        2: [
+            DistanceFeatureObservation(
+                id=2,
+                house_platform_id=2,
+                recommendation_observation_id=1,
+                university_id=1,
+                학교까지_분=35.0,
+                거리_백분위=0.7,
+                거리_버킷="30_40분",
+                거리_비선형_점수=0.4,
+                calculated_at=datetime.now(timezone.utc),
+            )
+        ],
+    }
 
     scores = [
         StudentHouseScoreSummary(
@@ -232,11 +285,13 @@ def test_recommend_student_house_mock():
                 return self._request
             return None
 
-    service = RecommendStudentHouseService(
+    service = RecommendStudentHouseUseCase(
         finder_request_repo=FakeFinderRequestRepository(finder_request),
         house_platform_repo=FakeHousePlatformRepository(),
         observation_repo=FakeObservationRepository(observations),
         score_repo=FakeScoreRepository(scores),
+        price_observation_repo=FakePriceObservationRepository(price_observations),
+        distance_observation_repo=FakeDistanceObservationRepository(distance_observations),
         policy=DecisionPolicyConfig(),
     )
 

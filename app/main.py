@@ -18,9 +18,6 @@ from modules.send_message.adapter.input.web.router.send_message_router import ro
 from modules.owner_recommendation.adapter.input.web.router.owner_recommendation_router import (
     router as owner_recommendation_router,
 )
-from modules.recommendations.adapter.input.web.router.recommendations_router import (
-    router as recommendations_router,
-)
 
 load_dotenv()
 app = FastAPI()
@@ -53,7 +50,6 @@ api_router.include_router(house_platform_router)
 api_router.include_router(send_message_router)
 api_router.include_router(owner_recommendation_router)
 api_router.include_router(finder_request_router)
-api_router.include_router(recommendations_router)
 
 # 등록한 /api 라우터를 메인 앱에 연결합니다.
 app.include_router(api_router)

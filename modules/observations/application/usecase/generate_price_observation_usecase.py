@@ -33,7 +33,7 @@ class GeneratePriceObservationUseCase:
         std = float(np.std(all_prices))
         price_zscore = float((price - mean) / std) if std > 0 else 0.0
         # TODO: zscore 범위 정책이 확정되면 보정 방식을 조정한다.
-        price_zscore = max(-10.0, min(10.0, price_zscore))
+        # price_zscore = max(-10.0, min(10.0, price_zscore))
 
         # ---------- 예상 비용 계산 (예시: deposit + 월세) ----------
         expected_move_in_cost = price  # 예시: deposit = price
