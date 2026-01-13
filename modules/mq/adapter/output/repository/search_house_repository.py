@@ -93,3 +93,10 @@ class SearchHouseRepository:
             .filter(SearchHouse.search_house_id == search_house_id)
             .one_or_none()
         )
+
+    def get_finder_request_id_by_id(self, search_house_id: int):
+        return (
+            self.db.query(SearchHouse.finder_request_id)
+            .filter(SearchHouse.search_house_id == search_house_id)
+            .one_or_none()
+        )
