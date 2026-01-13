@@ -30,6 +30,9 @@ def connect_with_retry(host, user, password, retry=20, delay=2):
         host=host,
         port=AMQP_PORT,
         credentials=creds,
+        heartbeat=30,
+        blocked_connection_timeout=60,
+
     )
     for i in range(retry):
         try:
@@ -108,12 +111,12 @@ def start_search_house_consumer():
     channel.basic_consume(
         queue=QUEUE_NAME,
         on_message_callback=callback,
+        auto_ack=False
     )
 
     print("[consumer] start_consuming() now...")
     print("[Consumer] search.house.request consuming start")
     channel.start_consuming()
-
 
 if __name__ == "__main__":
     start_search_house_consumer()
