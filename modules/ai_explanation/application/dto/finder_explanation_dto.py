@@ -29,7 +29,6 @@ class ObservationCommuteInput(BaseModel):
 class ObservationSummaryInput(BaseModel):
     price: ObservationPriceInput
     commute: ObservationCommuteInput
-    # risk, options 등은 설명 대상에서 제외되므로 생략 가능 (또는 Dict로 받음)
 
 # UseCase에 전달될 객체
 class ExplanationInput(BaseModel):
@@ -37,7 +36,7 @@ class ExplanationInput(BaseModel):
     observation_summary: ObservationSummaryInput
 
 # ==========================================
-# [Output] 결과 데이터 (Text & Evidence)
+# [Output] 결과 데이터
 # ==========================================
 
 class ReasonItem(BaseModel):
