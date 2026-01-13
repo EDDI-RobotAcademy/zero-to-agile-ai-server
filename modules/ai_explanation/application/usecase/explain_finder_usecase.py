@@ -1,4 +1,4 @@
-from modules.ai_explanation.application.dto.explanation_dto import (
+from modules.ai_explanation.application.dto.finder_explanation_dto import (
     ExplanationInput, ExplanationResult, ReasonItem
 )
 
