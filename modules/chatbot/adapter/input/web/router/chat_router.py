@@ -25,6 +25,10 @@ from modules.chatbot.application.usecase.generate_chat_response_usecase import (
 from shared.common.utils.token_counter import count_tokens
 from shared.infrastructure.config.llm_config import LLM_MODEL, MAX_PROMPT_TOKENS
 
+import json
+from json import JSONDecodeError
+from typing import Any
+
 router = APIRouter(prefix="/chatbot", tags=["chatbot"])
 
 
@@ -85,8 +89,39 @@ def _mock_request() -> ChatPromptRequest:
             ],
             risk_description="자차 이용 시 주차 여유가 부족할 수 있음",
         ),
-        user_prompt="이 매물의 장단점과 주의사항을 요약해줘.",
+        user_prompt="관리비 얼마야?",
     )
+
+
+def _normalize_llm_answer(raw: str) -> Any:
+    """
+    LLM 결과(raw)가 JSON 문자열이면 dict/list로 변환해서 반환한다.
+    - JSON이 아니면 원문 문자열 그대로 반환한다.
+    - {"answer": "..."} 단일 키 형태면 한 겹 벗겨서 "..."만 반환한다.
+    """
+    if raw is None:
+        return "정보 없음(확인 필요)"
+
+    text = raw.strip()
+
+    # 혹시 ```json ... ``` 코드펜스가 섞여오는 경우를 대비(안전장치)
+    if text.startswith("```"):
+        lines = text.splitlines()
+        # 첫 줄(``` 또는 ```json) 제거, 마지막 ``` 제거
+        if len(lines) >= 2 and lines[-1].strip() == "```":
+            text = "\n".join(lines[1:-1]).strip()
+
+    try:
+        parsed = json.loads(text)
+    except JSONDecodeError:
+        # JSON이 아니면 그냥 문자열로 내려보냄
+        return raw
+
+    # {"answer": "..."} 만 오는 경우 -> answer 문자열만 반환
+    if isinstance(parsed, dict) and set(parsed.keys()) == {"answer"} and isinstance(parsed.get("answer"), str):
+        return parsed["answer"]
+
+    return parsed
 
 
 @router.post("/prompt", response_model=ChatPromptResponse)
@@ -113,7 +148,9 @@ def generate_response(request: ChatPromptRequest) -> ChatPromptResponse:
             todo_descriptions=request.todo_descriptions,
         )
     )
-    return ChatPromptResponse(answer=result.answer)
+
+    normalized_answer = _normalize_llm_answer(result.answer)
+    return ChatPromptResponse(answer=normalized_answer)
 
 
 @router.post("/prompt/mock", response_model=ChatPromptResponse)
@@ -142,4 +179,6 @@ def generate_response_with_mock() -> ChatPromptResponse:
             todo_descriptions=mock_request.todo_descriptions,
         )
     )
-    return ChatPromptResponse(answer=result.answer)
+
+    normalized_answer = _normalize_llm_answer(result.answer)
+    return ChatPromptResponse(answer=normalized_answer)

@@ -8,8 +8,8 @@ from modules.house_platform.domain.house_platform import HousePlatform
 from modules.observations.domain.model.student_recommendation_feature_observation import (
     StudentRecommendationFeatureObservation,
     ObservationMetadata,
-    PriceObservationFeatures,
-    DistanceObservationFeatures,
+#    PriceObservationFeatures,
+ #   DistanceObservationFeatures,
     RiskObservationFeatures,
     ConvenienceObservationFeatures,
     ObservationNotes,

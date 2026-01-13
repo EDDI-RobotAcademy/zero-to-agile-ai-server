@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-
+from typing import Any
 
 class ChatPromptResponse(BaseModel):
-    answer: str = Field(..., description="GPT 응답")
+    answer: Any = Field(..., description="GPT 응답")

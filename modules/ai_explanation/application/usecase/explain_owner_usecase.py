@@ -1,3 +1,4 @@
+from modules.ai_explanation.adapter.input.web.request.owner_request import OwnerExplanationRequest
 from modules.ai_explanation.application.port.llm_port import LLMPort
 from modules.ai_explanation.adapter.output.llm_adapter import LLMAdapter
 from modules.ai_explanation.adapter.input.web.response.ai_response import AiResponse
