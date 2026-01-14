@@ -151,7 +151,7 @@ class HousePlatformResponse(BaseModel):
     registered_at: Optional[datetime]
     crawled_at: Optional[datetime]
     snapshot_id: Optional[str]
-    abang_user_id: int
+    abang_user_id: Optional[int]
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     phone_number: Optional[str] = None
