@@ -17,6 +17,16 @@ from modules.recommendations.application.dto.recommendation_dto import (
 from modules.recommendations.application.port_in.recommend_student_house_port import (
     RecommendStudentHousePort,
 )
+from modules.ai_explanation.application.usecase.explain_finder_usecase import (
+    ExplainFinderUseCase,
+)
+from modules.ai_explanation.application.dto.finder_explanation_dto import (
+    ExplanationInput,
+    ObservationSummaryInput,
+    ObservationPriceInput,
+    ObservationCommuteInput,
+    UserConstraintsInput,
+)
 from infrastructure.db.postgres import SessionLocal
 from infrastructure.db.session_helper import open_session
 from modules.decision_context_signal_builder.application.usecase.build_decision_context_signal_usecase import (
@@ -89,6 +99,7 @@ class RecommendStudentHouseUseCase(RecommendStudentHousePort):
         university_repo: UniversityRepositoryPort | None = None,
         filter_usecase: FilterCandidatePort | None = None,
         build_context_signal_usecase=None,
+        explain_usecase: ExplainFinderUseCase | None = None,
         policy: DecisionPolicyConfig | None = None,
         session_factory=SessionLocal,
     ):
@@ -103,6 +114,7 @@ class RecommendStudentHouseUseCase(RecommendStudentHousePort):
         self.university_repo = university_repo
         self.filter_usecase = filter_usecase
         self.build_context_signal_usecase = build_context_signal_usecase
+        self.explain_usecase = explain_usecase
         self.policy = policy or DecisionPolicyConfig()
         self._session_factory = session_factory
 
@@ -155,6 +167,9 @@ class RecommendStudentHouseUseCase(RecommendStudentHousePort):
             distance_observation_repo=runtime_distance_repo,
             university_repo=runtime_university_repo,
         )
+        runtime_explain_usecase = (
+            self.explain_usecase or ExplainFinderUseCase()
+        )
         runtime_context_signal_usecase = (
             self.build_context_signal_usecase
             or BuildDecisionContextSignalUseCase(
@@ -175,6 +190,7 @@ class RecommendStudentHouseUseCase(RecommendStudentHousePort):
             self.university_repo,
             self.filter_usecase,
             self.build_context_signal_usecase,
+            self.explain_usecase,
         )
         self.finder_request_repo = runtime_finder_repo
         self.house_platform_repo = runtime_house_platform_repo
@@ -185,6 +201,7 @@ class RecommendStudentHouseUseCase(RecommendStudentHousePort):
         self.university_repo = runtime_university_repo
         self.filter_usecase = runtime_filter_usecase
         self.build_context_signal_usecase = runtime_context_signal_usecase
+        self.explain_usecase = runtime_explain_usecase
 
         try:
             candidates = command.candidate_house_platform_ids
@@ -286,6 +303,7 @@ class RecommendStudentHouseUseCase(RecommendStudentHousePort):
                 self.university_repo,
                 self.filter_usecase,
                 self.build_context_signal_usecase,
+                self.explain_usecase,
             ) = previous
             if generator:
                 generator.close()
@@ -434,6 +452,9 @@ class RecommendStudentHouseUseCase(RecommendStudentHousePort):
                 distance_observation,
                 raw.get("snapshot_id"),
             )
+            explanation = self._build_ai_explanation(
+                request, observation_summary
+            )
             score_breakdown = self._build_score_breakdown(score, policy)
             version_mismatch = self._has_version_mismatch(
                 score, feature_observation
@@ -454,29 +475,46 @@ class RecommendStudentHouseUseCase(RecommendStudentHousePort):
             }
 
             if decision_status == "RECOMMENDED":
+                recommended_reasons = (
+                    explanation.get("recommended_reasons", [])
+                    if explanation
+                    else []
+                )
                 item["ai_explanation"] = {
-                    "recommended_reasons": [],
-                    "warnings": self._build_warnings(version_mismatch),
+                    "recommended_reasons": recommended_reasons,
+                    "warnings": self._build_warnings(
+                        version_mismatch,
+                        has_explanation=explanation is not None,
+                    ),
                 }
-                # TODO: explain_by_feature_observations_usecase 연동 시 실제 설명을 채운다.
+                # TODO: 추천 설명 정책을 정교화한다.
             else:
-                reject_reasons = [
-                    {
-                        "code": "SCORE_BELOW_THRESHOLD",
-                        "text": "점수 기준 미달로 제외되었습니다.",
-                        "evidence": {
-                            "base_total_score": score.base_total_score
-                            if score
-                            else 0.0,
-                            "threshold": policy.threshold_base_total,
-                        },
-                    }
-                ]
+                reject_reasons = (
+                    explanation.get("reject_reasons", [])
+                    if explanation
+                    else []
+                )
+                used_fallback_reject = False
+                if not reject_reasons:
+                    reject_reasons = [
+                        {
+                            "code": "SCORE_BELOW_THRESHOLD",
+                            "text": "점수 기준 미달로 제외되었습니다.",
+                            "evidence": {
+                                "base_total_score": score.base_total_score
+                                if score
+                                else 0.0,
+                                "threshold": policy.threshold_base_total,
+                            },
+                        }
+                    ]
+                    used_fallback_reject = True
                 item["reject_reasons"] = reject_reasons
                 item["ai_explanation"] = {
                     "reject_reasons": reject_reasons,
                     "warnings": self._build_reject_warnings(
-                        version_mismatch
+                        version_mismatch,
+                        used_fallback_reject,
                     ),
                 }
             results.append(item)
@@ -693,15 +731,23 @@ class RecommendStudentHouseUseCase(RecommendStudentHousePort):
         )
 
     @staticmethod
-    def _build_warnings(version_mismatch: bool) -> list[str]:
-        warnings = ["추천 설명은 추후 생성됩니다."]
+    def _build_warnings(
+        version_mismatch: bool, has_explanation: bool
+    ) -> list[str]:
+        warnings = []
+        if not has_explanation:
+            warnings.append("추천 설명은 추후 생성됩니다.")
         if version_mismatch:
             warnings.append("관측 버전과 점수 버전이 일치하지 않습니다.")
         return warnings
 
     @staticmethod
-    def _build_reject_warnings(version_mismatch: bool) -> list[str]:
-        warnings = ["점수 기준 미달로 후보에서 제외되었습니다."]
+    def _build_reject_warnings(
+        version_mismatch: bool, used_fallback_reject: bool
+    ) -> list[str]:
+        warnings = []
+        if used_fallback_reject:
+            warnings.append("점수 기준 미달로 후보에서 제외되었습니다.")
         if version_mismatch:
             warnings.append("관측 버전과 점수 버전이 일치하지 않습니다.")
         return warnings
@@ -733,4 +779,52 @@ class RecommendStudentHouseUseCase(RecommendStudentHousePort):
                 "fridge_yn": request.fridge_yn,
                 "max_building_age": request.max_building_age,
             },
+        }
+
+    def _build_ai_explanation(self, request, observation_summary):
+        """AI 설명을 생성한다."""
+        if not request or not observation_summary:
+            return None
+        if not self.explain_usecase:
+            return None
+
+        constraints = UserConstraintsInput(
+            budget_deposit_max=request.max_deposit,
+            budget_monthly_max=request.max_rent,
+            max_commute_min=None,
+        )
+        summary_input = ObservationSummaryInput(
+            price=ObservationPriceInput(
+                **observation_summary["price"]
+            ),
+            commute=ObservationCommuteInput(
+                **observation_summary["commute"]
+            ),
+        )
+        explanation_input = ExplanationInput(
+            user_constraints=constraints,
+            observation_summary=summary_input,
+        )
+        result = self.explain_usecase.execute(explanation_input)
+        return {
+            "recommended_reasons": [
+                self._to_reason_dict(item)
+                for item in result.recommended_reasons
+            ],
+            "reject_reasons": [
+                self._to_reason_dict(item)
+                for item in result.reject_reasons
+            ],
+        }
+
+    @staticmethod
+    def _to_reason_dict(reason) -> dict[str, Any]:
+        if hasattr(reason, "model_dump"):
+            return reason.model_dump()
+        if hasattr(reason, "dict"):
+            return reason.dict()
+        return {
+            "code": getattr(reason, "code", None),
+            "text": getattr(reason, "text", ""),
+            "evidence": getattr(reason, "evidence", {}),
         }
