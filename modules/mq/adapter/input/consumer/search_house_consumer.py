@@ -3,11 +3,14 @@ import time
 import os
 from dotenv import load_dotenv
 import pika
+import traceback
+from modules.mq.application.usecase.process_search_house_usecase import ProcessSearchHouseUseCase
 
 print("[consumer] file loaded")
 
 from infrastructure.db.postgres import get_db_session
-from modules.mq.application.usecase.process_search_house_usecase import ProcessSearchHouseUseCase
+from modules.recommendations.application.usecase.recommend_student_house import RecommendStudentHouseUseCase
+
 
 load_dotenv()
 
@@ -16,8 +19,8 @@ AMQP_PORT = int(os.getenv("AMQP_PORT", "5672"))
 AMQP_USER = os.getenv("AMQP_USER")
 AMQP_PASSWORD = os.getenv("AMQP_PASSWORD")
 
-EXCHANGE_NAME = "recommend.exchange"
 QUEUE_NAME = "search.house.request"
+EXCHANGE_NAME = "recommend.exchange"
 ROUTING_KEY = "recommend.house"
 
 
@@ -27,8 +30,9 @@ def connect_with_retry(host, user, password, retry=20, delay=2):
         host=host,
         port=AMQP_PORT,
         credentials=creds,
-        heartbeat=30,    # 연결 유지
-        blocked_connection_timeout=300,
+        heartbeat=30,
+        blocked_connection_timeout=60,
+
     )
     for i in range(retry):
         try:
@@ -53,6 +57,7 @@ def start_search_house_consumer():
     channel = connection.channel()
     print(f"[consumer] connected to MQ host={AMQP_HOST} queue={QUEUE_NAME}")
 
+    # EXCHANGE 선언
     print("[consumer] declaring exchange...")
     channel.exchange_declare(
         exchange=EXCHANGE_NAME,
@@ -61,10 +66,12 @@ def start_search_house_consumer():
     )
     print("[consumer] exchange declared")
 
+    # 큐 선언
     print("[consumer] declaring queue...")
     channel.queue_declare(queue=QUEUE_NAME, durable=True)
     print("[consumer] queue declared")
 
+    # 큐 바인딩
     print("[consumer] binding queue to exchange...")
     channel.queue_bind(
         exchange=EXCHANGE_NAME,
@@ -73,7 +80,7 @@ def start_search_house_consumer():
     )
     print("[consumer] queue bound")
 
-    channel.basic_qos(prefetch_count=1)  # 한 번에 하나씩
+    channel.basic_qos(prefetch_count=1)
 
     def callback(ch, method, properties, body):
         print(f"[consumer][callback] raw_body={body}")
@@ -82,31 +89,34 @@ def start_search_house_consumer():
         print(f"[consumer][search_house] Received search_house_id={search_house_id}")
 
         db = next(get_db_session())
-        usecase = ProcessSearchHouseUseCase(db=db)
 
         try:
-            usecase.execute(search_house_id)
-            print(f"[consumer][search_house] Completed search_house_id={search_house_id}")
-            ch.basic_ack(delivery_tag=method.delivery_tag)
+            ai_agent = RecommendStudentHouseUseCase()
 
+            # Process UseCase에 주입
+            process_usecase = ProcessSearchHouseUseCase(db, ai_agent)
+
+            print("[consumer][callback] running process_usecase...")
+            process_usecase.execute(search_house_id)
+
+            ch.basic_ack(delivery_tag=method.delivery_tag)
         except Exception as e:
             print(f"[ERROR][consumer][callback] search_house_id={search_house_id}, error={e}")
-            # 재큐 방지
-            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
+            traceback.print_exc()
+            ch.basic_ack(delivery_tag=method.delivery_tag)
         finally:
             print("[consumer][callback] closing DB session")
             db.close()
 
-    print("[consumer] start_consuming() now...")
-    print("[Consumer] search.house.request consuming start")
     channel.basic_consume(
         queue=QUEUE_NAME,
         on_message_callback=callback,
-        auto_ack=False,
+        auto_ack=False
     )
-    channel.start_consuming()
 
+    print("[consumer] start_consuming() now...")
+    print("[Consumer] search.house.request consuming start")
+    channel.start_consuming()
 
 if __name__ == "__main__":
     start_search_house_consumer()
